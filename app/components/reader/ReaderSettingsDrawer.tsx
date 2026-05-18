@@ -246,7 +246,7 @@ export function ReaderSettingsDrawer({
 
               <section>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  AI 头像音色（占位）
+                  AI 朗读音色
                 </p>
                 <div className="space-y-2">
                   {VOICES.map((v) => (

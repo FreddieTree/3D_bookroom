@@ -56,7 +56,7 @@ function TokenRing({ pct }: { pct: number }) {
 
 function mockUpgrade(tier: string) {
   window.alert(
-    `升级至「${tier}」功能敬请期待。\n当前为演示环境，不接真实支付。`,
+    `升级至「${tier}」功能敬请期待。\n当前版本未开放支付，仅作界面预览。`,
   );
 }
 
@@ -341,7 +341,7 @@ export function SettingsHub() {
           <div className="border-t border-border/70">
             <ToggleRow
               label="通知"
-              description="digest 与实验功能提醒（演示开关，无推送）"
+              description="摘要与活动提醒（推送服务上线前仅保存在本机偏好）"
               on={notificationsEnabled}
               onToggle={() => setNotificationsEnabled(!notificationsEnabled)}
             />
@@ -362,14 +362,14 @@ export function SettingsHub() {
               className="flex w-full items-center justify-between rounded-xl px-1 py-3 text-left font-sans text-sm text-destructive transition-colors hover:bg-destructive/5"
             >
               退出登录
-              <span className="text-xs text-muted-foreground">演示</span>
+              <span className="text-xs text-muted-foreground">本地</span>
             </button>
           </div>
         </div>
       </section>
 
       <div className="font-sans text-center text-xs text-muted-foreground">
-        3D Bookroom · 商业模式演示界面 · 数据均为本地 Mock
+        三维书屋 · 偏好与用量保存在本机
       </div>
 
       {aboutOpen ? (
@@ -388,9 +388,9 @@ export function SettingsHub() {
               关于
             </h3>
             <p className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">
-              本页用于验证会员、额度与订阅叙事的可用性。版本{" "}
+              当前版本{" "}
               <span className="font-mono text-foreground">{APP_VERSION}</span>
-              。正式环境将接入账号系统与合规计费。
+              。会员档位、额度与账号相关能力将在服务端就绪后自动同步，无需重装应用。
             </p>
             <button
               type="button"
@@ -406,15 +406,17 @@ export function SettingsHub() {
       <nav className="space-y-2 border-t border-border pt-8 font-sans text-sm">
         <Link
           href="/install"
+          prefetch
           className="flex flex-col rounded-2xl px-3 py-3 text-foreground transition-colors hover:bg-muted"
         >
           PWA 安装引导
           <span className="text-xs text-muted-foreground">
-            添加到主屏幕步骤预览
+            添加到主屏幕
           </span>
         </Link>
         <Link
           href="/library"
+          prefetch
           className="flex flex-col rounded-2xl px-3 py-3 text-foreground transition-colors hover:bg-muted"
         >
           完整书架

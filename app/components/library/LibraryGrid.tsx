@@ -32,7 +32,7 @@ export function LibraryGrid() {
         </p>
         <p className="font-serif text-2xl font-semibold text-foreground">完整书架</p>
         <p className="font-sans text-sm text-muted-foreground">
-          共 {BOOKS.length} 本 · 预置演示数据
+          共 {BOOKS.length} 本藏书
         </p>
       </header>
 

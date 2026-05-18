@@ -31,7 +31,7 @@ export const BOOKS: BookMeta[] = [
       "color-mix(in oklch, var(--color-primary) 42%, var(--color-background))",
     coverEmoji: "🌹",
     shortDesc:
-      "童话与哲理交织的星际旅程：孤独、驯养与玫瑰。试读本内含前三章中文演示正文。",
+      "童话与哲理交织的星际旅程：孤独、驯养与玫瑰。当前上架试读含前三章中文内容。",
     totalChapters: 3,
     estimatedHours: 2,
     isReady: true,
@@ -48,7 +48,8 @@ export const BOOKS: BookMeta[] = [
     coverColor:
       "color-mix(in oklch, var(--color-accent) 34%, var(--color-background))",
     coverEmoji: "📜",
-    shortDesc: "国民性解剖的经典短篇，冷峻锋利。整书解析与正文将在后续 Phase 接入。",
+    shortDesc:
+      "国民性解剖的经典短篇，冷峻锋利。整书解析与正文将随版本迭代持续补全。",
     totalChapters: 1,
     estimatedHours: 1,
     isReady: false,

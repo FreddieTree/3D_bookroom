@@ -37,7 +37,7 @@ export function getChapterCoverMeta(
   }
   return {
     chapterTitle: chs[chapterIndex]!.title,
-    tagline: "本章即将开始，沉浸式阅读为演示准备中。",
-    bgmTitle: "章节氛围（占位）",
+    tagline: "本章即将开始，准备好进入阅读。",
+    bgmTitle: "章节氛围音乐",
   };
 }

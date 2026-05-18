@@ -184,7 +184,7 @@ function EmotionChart() {
   return (
     <div className="relative rounded-2xl border border-border/80 bg-muted/25 p-4 pr-2">
       <p className="mb-1 font-sans text-xs font-medium text-muted-foreground">
-        情绪强度轨迹（演示）
+        情绪强度轨迹
       </p>
       <ResponsiveContainer width="100%" height={244}>
         <LineChart
@@ -448,7 +448,7 @@ export function BookFinishedExperience({ bookId }: BookFinishedExperienceProps) 
                 {songTitle}
               </p>
               <p className="mt-1 font-sans text-xs text-muted-foreground">
-                占位音频（演示）— 可播放验证控件
+                试听片段将随版本更新为正式曲目。
               </p>
               <audio
                 controls
@@ -461,7 +461,7 @@ export function BookFinishedExperience({ bookId }: BookFinishedExperienceProps) 
               <button
                 type="button"
                 onClick={() =>
-                  window.alert("下载已加入队列（演示功能，敬请期待）。")
+                  window.alert("下载功能即将开放，敬请期待。")
                 }
                 className="font-sans mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               >
@@ -530,14 +530,16 @@ export function BookFinishedExperience({ bookId }: BookFinishedExperienceProps) 
                 旅程卡片已生成
               </p>
               <p className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">
-                「{subtitle}」—— 这张分享卡用于商业模式评委预览，导出与社交平台对接稍后上线。
+                「{subtitle}」—— 完整分享图与导出能力将在后续版本中提供。
               </p>
               <div className="mt-5 flex gap-2">
                 <button
                   type="button"
                   className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-primary text-sm font-medium text-primary-foreground"
                   onClick={() =>
-                    window.alert("已复制文案到剪贴板（演示：浏览器可能拦截）。")
+                    window.alert(
+                      "已尝试复制分享文案；若浏览器未授权剪贴板，请手动选择文字复制。",
+                    )
                   }
                 >
                   复制文案

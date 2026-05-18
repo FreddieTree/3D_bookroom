@@ -1,9 +1,8 @@
-import Link from "next/link";
-
+import { BookChapterList } from "@/app/components/book/BookChapterList";
+import { BookCoverActions } from "@/app/components/book/BookCoverActions";
+import { DemoBookShortcuts } from "@/app/components/book/DemoBookShortcuts";
 import { MobileContainer } from "@/app/components/layout/MobileContainer";
 import { PageHeader } from "@/app/components/layout/PageHeader";
-import { BookCoverActions } from "@/app/components/book/BookCoverActions";
-import { PhaseBlurb } from "@/app/components/shelf/PhaseBlurb";
 import { getBookById } from "@/app/lib/data/books";
 
 type BookCoverPageProps = {
@@ -18,9 +17,9 @@ export default async function BookCoverPage({ params }: BookCoverPageProps) {
     <MobileContainer>
       <PageHeader />
       <main className="mx-auto flex w-full flex-1 flex-col px-6 pb-16 pt-2 sm:px-8">
-        <header className="mb-8 space-y-4">
+        <header className="mb-2 space-y-4">
           <p className="font-sans text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            书籍封面 / 章节目录
+            书籍详情
           </p>
           {book ? (
             <>
@@ -61,32 +60,13 @@ export default async function BookCoverPage({ params }: BookCoverPageProps) {
           )}
         </header>
 
+        {book ? <BookChapterList bookId={bookId} /> : null}
+
         {book ? (
-          <PhaseBlurb>
-            Phase 3：在此呈现完整章节列表与「继续阅读」入口。当前可跳转阅读器验证导航与
-            store。
-          </PhaseBlurb>
+          <BookCoverActions bookId={bookId} isReady={book.isReady} />
         ) : null}
 
-        {book ? <BookCoverActions bookId={bookId} isReady={book.isReady} /> : null}
-
-        <nav className="font-sans mt-10 space-y-2 text-sm text-muted-foreground">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            快捷演示
-          </p>
-          <Link
-            href={`/book/${bookId}/map`}
-            className="block rounded-xl px-3 py-2 text-foreground hover:bg-muted"
-          >
-            直接去阅读地图（占位）
-          </Link>
-          <Link
-            href={`/book/${bookId}/finished`}
-            className="block rounded-xl px-3 py-2 text-foreground hover:bg-muted"
-          >
-            直接去读完页（占位）
-          </Link>
-        </nav>
+        {book ? <DemoBookShortcuts bookId={bookId} /> : null}
       </main>
     </MobileContainer>
   );

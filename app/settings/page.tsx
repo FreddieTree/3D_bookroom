@@ -15,7 +15,7 @@ export default function SettingsPage() {
             设置
           </h1>
           <p className="font-sans text-sm text-muted-foreground">
-            以下为演示数据，用于验证会员与 Token 商业模式。
+            账户与用量为本地预览，接入服务端后将与真实套餐同步。
           </p>
         </header>
 

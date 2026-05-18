@@ -103,7 +103,7 @@ export function RadioDramaMode({ open, onClose, paragraph }: RadioDramaModeProps
             className="font-sans fixed inset-x-0 bottom-0 z-[160] mx-auto w-full max-w-[430px] rounded-t-2xl border border-white/10 bg-[#0e0e12]/96 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 text-zinc-100 shadow-[0_-24px_60px_-24px_rgba(0,0,0,0.65)]"
           >
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold">广播剧（Mock）</p>
+              <p className="text-sm font-semibold">广播剧 · 体验</p>
               <button
                 type="button"
                 onClick={() => {

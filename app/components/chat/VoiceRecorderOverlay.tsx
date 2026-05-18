@@ -94,7 +94,7 @@ export function VoiceRecorderOverlay({
       }}
     >
       <div className="absolute top-[max(2rem,env(safe-area-inset-top))] text-center text-sm text-muted-foreground">
-        上滑取消 · 松开发送（mock）
+        上滑取消 · 松开发送
       </div>
       <div
         className="flex flex-col items-center gap-8 px-8"
