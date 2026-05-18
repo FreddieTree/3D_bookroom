@@ -6,6 +6,8 @@ import {
   Noto_Serif_SC,
 } from "next/font/google";
 
+import { StoreHydration } from "@/app/components/providers/StoreHydration";
+
 import "./globals.css";
 
 const inter = Inter({
@@ -74,7 +76,9 @@ export default function RootLayout({
       lang="zh-CN"
       className={`${inter.variable} ${lora.variable} ${notoSansSc.variable} ${notoSerifSc.variable} h-full`}
     >
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        <StoreHydration>{children}</StoreHydration>
+      </body>
     </html>
   );
 }
