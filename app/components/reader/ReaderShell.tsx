@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { Bot, ChevronLeft, Map as MapIcon, MessageCircle, Mic, Settings } from "lucide-react";
 import Link from "next/link";
 
@@ -21,12 +22,15 @@ const FONT_SIZES = [14, 16, 18, 20, 22] as const;
 
 type ReaderShellProps = {
   bookId: string;
+  /** 从阅读地图带锚点进入时由 URL `?p=` 传入 */
+  openParagraphId?: string | null;
 };
 
-export function ReaderShell({ bookId }: ReaderShellProps) {
+export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps) {
   const book = getBookById(bookId);
   const chapters = getChaptersForBook(bookId);
   const { back } = useNavigation();
+  const router = useRouter();
 
   const readerProgressByBook = useAppStore((s) => s.readerProgressByBook);
   const setReadingAnchor = useAppStore((s) => s.setReadingAnchor);
@@ -151,6 +155,32 @@ export function ReaderShell({ bookId }: ReaderShellProps) {
   useEffect(() => {
     lastIoParagraph.current = null;
   }, [chapterIndex]);
+
+  useEffect(() => {
+    if (!openParagraphId || !chapters?.length) return;
+    const chIdx = chapters.findIndex((ch) =>
+      ch.paragraphs.some((p) => p.id === openParagraphId),
+    );
+    if (chIdx < 0) return;
+    queueMicrotask(() => {
+      setChapterIndex(chIdx);
+      setReadingAnchor(bookId, chIdx, openParagraphId);
+      lastIoParagraph.current = openParagraphId;
+    });
+    const t = window.setTimeout(() => {
+      document
+        .getElementById(openParagraphId)
+        ?.scrollIntoView({ block: "center" });
+    }, 160);
+    router.replace(`/book/${bookId}/read`, { scroll: false });
+    return () => window.clearTimeout(t);
+  }, [
+    openParagraphId,
+    bookId,
+    chapters,
+    setReadingAnchor,
+    router,
+  ]);
 
   useEffect(() => {
     if (!chapter) return;

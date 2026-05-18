@@ -13,6 +13,7 @@ import {
   type ChatMessage,
   type PendingQuestion,
 } from "@/app/lib/mock/chat";
+import type { MapFilterTab } from "@/app/lib/mock/map-data";
 
 export type ReaderThemeMode = "light" | "dark" | "system";
 
@@ -53,6 +54,16 @@ export type AppStoreState = {
   chatDrawerHeightPct: number;
   pendingQuestions: PendingQuestion[];
   isAiTyping: boolean;
+
+  /** 阅读地图：筛选与滚动位置（按书） */
+  mapSessionByBook: Record<
+    string,
+    { filterTab: MapFilterTab; scrollTop: number }
+  >;
+  setMapSession: (
+    bookId: string,
+    patch: Partial<{ filterTab: MapFilterTab; scrollTop: number }>,
+  ) => void;
 
   setCurrentBookId: (id: string | null) => void;
   setCurrentChapterIndex: (index: number) => void;
@@ -102,6 +113,8 @@ export const useAppStore = create<AppStoreState>()(
       pendingQuestions: [],
       isAiTyping: false,
 
+      mapSessionByBook: {},
+
       setCurrentBookId: (currentBookId) => set({ currentBookId }),
       setCurrentChapterIndex: (currentChapterIndex) =>
         set({ currentChapterIndex }),
@@ -136,6 +149,20 @@ export const useAppStore = create<AppStoreState>()(
 
       clearChat: () =>
         set({ chatMessages: [], pendingQuestions: [], isAiTyping: false }),
+
+      setMapSession: (bookId, patch) =>
+        set((s) => {
+          const prev = s.mapSessionByBook[bookId] ?? {
+            filterTab: "all" as MapFilterTab,
+            scrollTop: 0,
+          };
+          return {
+            mapSessionByBook: {
+              ...s.mapSessionByBook,
+              [bookId]: { ...prev, ...patch },
+            },
+          };
+        }),
 
       releasePending: () => {
         const pending = get().pendingQuestions[0];
@@ -249,6 +276,7 @@ export const useAppStore = create<AppStoreState>()(
         readerProgressByBook: state.readerProgressByBook,
         chatMessages: state.chatMessages,
         pendingQuestions: state.pendingQuestions,
+        mapSessionByBook: state.mapSessionByBook,
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AppStoreState> | undefined;
@@ -267,6 +295,10 @@ export const useAppStore = create<AppStoreState>()(
           chatMessages: p?.chatMessages ?? current.chatMessages,
           pendingQuestions:
             p?.pendingQuestions ?? current.pendingQuestions,
+          mapSessionByBook: {
+            ...current.mapSessionByBook,
+            ...p?.mapSessionByBook,
+          },
           isChatOpen: false,
           isAiTyping: false,
         };
