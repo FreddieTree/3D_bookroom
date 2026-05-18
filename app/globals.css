@@ -1,26 +1,105 @@
 @import "tailwindcss";
 
+/* Design tokens — base hex preserved via OKLCH relative color (Safari / modern engines) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  --background: oklch(from #faf6f0 l c h);
+  --foreground: oklch(from #3d342b l c h);
+  --primary: oklch(from #b8763e l c h);
+  --primary-foreground: oklch(from #faf6f0 l c h);
+  --accent: oklch(from #4a6b5c l c h);
+  --accent-foreground: oklch(from #faf6f0 l c h);
+  --destructive: oklch(from #c44536 l c h);
+  --destructive-foreground: oklch(from #faf6f0 l c h);
+
+  --muted: color-mix(in oklch, oklch(from #3d342b l c h) 8%, oklch(from #faf6f0 l c h));
+  --muted-foreground: color-mix(in oklch, oklch(from #3d342b l c h) 62%, transparent);
+
+  --frame: oklch(from #1a1611 l c h);
+  --border: color-mix(in oklch, oklch(from #3d342b l c h) 12%, oklch(from #faf6f0 l c h));
+  --ring: oklch(from #b8763e l c h);
+
+  --shadow-soft: 0 12px 40px -18px
+    color-mix(in oklch, oklch(from #3d342b l c h) 28%, transparent);
+
+  --font-serif-stack: var(--font-lora), var(--font-noto-serif-sc), ui-serif, serif;
+  --font-sans-stack: var(--font-inter), var(--font-noto-sans-sc), ui-sans-serif,
+    system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --background: oklch(from #1a1611 l c h);
+    --foreground: oklch(from #f5edde l c h);
+    --primary: color-mix(
+      in oklch,
+      oklch(from #b8763e l c h) 88%,
+      oklch(from #f5edde l c h) 12%
+    );
+    --primary-foreground: oklch(from #1a1611 l c h);
+    --accent: color-mix(
+      in oklch,
+      oklch(from #4a6b5c l c h) 90%,
+      oklch(from #f5edde l c h) 10%
+    );
+    --accent-foreground: oklch(from #f5edde l c h);
+    --destructive: color-mix(
+      in oklch,
+      oklch(from #c44536 l c h) 92%,
+      oklch(from #f5edde l c h) 8%
+    );
+    --destructive-foreground: oklch(from #faf6f0 l c h);
+
+    --muted: color-mix(in oklch, oklch(from #f5edde l c h) 10%, oklch(from #1a1611 l c h));
+    --muted-foreground: color-mix(in oklch, oklch(from #f5edde l c h) 58%, transparent);
+
+    --frame: color-mix(in oklch, oklch(from #1a1611 l c h) 92%, black);
+    --border: color-mix(in oklch, oklch(from #f5edde l c h) 14%, oklch(from #1a1611 l c h));
+    --ring: color-mix(
+      in oklch,
+      oklch(from #b8763e l c h) 85%,
+      oklch(from #f5edde l c h) 15%
+    );
+
+    --shadow-soft: 0 14px 48px -20px
+      color-mix(in oklch, black 55%, oklch(from #b8763e l c h) 8%);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-frame: var(--frame);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --shadow-soft: var(--shadow-soft);
+
+  --font-sans: var(--font-sans-stack);
+  --font-serif: var(--font-serif-stack);
+
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans-stack);
+  }
 }
