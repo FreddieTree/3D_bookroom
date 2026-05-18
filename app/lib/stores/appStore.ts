@@ -5,10 +5,12 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 
+import { getAiProvider } from "@/app/lib/ai/provider";
 import {
-  mockChatResponse,
-  mockReleaseAnswer,
-  shouldDeferAsSpoiler,
+  hasReadThrough,
+  chapterNumberFromParagraphId,
+} from "@/app/lib/ai/data/littlePrince";
+import {
   spoilerQueueCopy,
   type ChatMessage,
   type PendingQuestion,
@@ -184,14 +186,26 @@ export const useAppStore = create<AppStoreState>()(
         })),
 
       setReadingAnchor: (bookId, chapterIndex, paragraphId) =>
-        set((s) => ({
-          currentChapterIndex: chapterIndex,
-          currentParagraphId: paragraphId,
-          readerProgressByBook: {
-            ...s.readerProgressByBook,
-            [bookId]: { chapterIndex, paragraphId },
-          },
-        })),
+        set((s) => {
+          const nextPending = s.pendingQuestions.map((q) => {
+            if (q.status === "ready" || !q.revealAfterParagraphId) return q;
+            return hasReadThrough(paragraphId, q.revealAfterParagraphId)
+              ? { ...q, status: "ready" as const }
+              : q;
+          });
+          const pendingChanged = nextPending.some(
+            (q, i) => q.status !== s.pendingQuestions[i]?.status,
+          );
+          return {
+            currentChapterIndex: chapterIndex,
+            currentParagraphId: paragraphId,
+            readerProgressByBook: {
+              ...s.readerProgressByBook,
+              [bookId]: { chapterIndex, paragraphId },
+            },
+            pendingQuestions: pendingChanged ? nextPending : s.pendingQuestions,
+          };
+        }),
 
       resetReaderPosition: () =>
         set({ currentChapterIndex: 0, currentParagraphId: null }),
@@ -279,12 +293,21 @@ export const useAppStore = create<AppStoreState>()(
           set({ isChatOpen: true });
           return;
         }
+        const provider = getAiProvider();
+        const ctx = {
+          bookId: get().currentBookId ?? "",
+          chapterIndex: get().currentChapterIndex,
+          paragraphId: get().currentParagraphId,
+        };
+        const answer = provider.composeReleaseAnswer(pending, ctx);
         const msg: ChatMessage = {
           id: uid(),
           role: "ai",
           type: "pending-release",
-          content: mockReleaseAnswer(pending),
+          content: answer.text,
           createdAt: Date.now(),
+          citations: answer.citations.length > 0 ? answer.citations : undefined,
+          conceptId: answer.conceptId,
         };
         set((s) => ({
           pendingQuestions: s.pendingQuestions.slice(1),
@@ -310,21 +333,44 @@ export const useAppStore = create<AppStoreState>()(
           isAiTyping: true,
         }));
 
+        const provider = getAiProvider();
+        const aiCtx = {
+          bookId: ctx.bookId,
+          chapterIndex: ctx.currentChapterIndex,
+          paragraphId: ctx.paragraphId,
+        };
+
         void (async () => {
           try {
-            if (shouldDeferAsSpoiler(trimmed)) {
+            const verdict = provider.judgeSpoiler(trimmed, aiCtx);
+            if (verdict.kind !== "ok") {
               const pendingId = uid();
+              const revealParagraph = verdict.revealAfterParagraphId;
+              const revealChapter =
+                verdict.revealAfterChapter ??
+                (revealParagraph
+                  ? chapterNumberFromParagraphId(revealParagraph)
+                  : REVEAL_CHAPTER);
+              const initialStatus: PendingQuestion["status"] =
+                revealParagraph &&
+                hasReadThrough(ctx.paragraphId, revealParagraph)
+                  ? "ready"
+                  : "pending";
               const pending: PendingQuestion = {
                 id: pendingId,
                 userQuestion: trimmed,
                 paragraphId: ctx.paragraphId,
-                revealAfterChapter: REVEAL_CHAPTER,
+                revealAfterChapter: revealChapter,
+                revealAfterParagraphId: revealParagraph,
+                status: initialStatus,
+                matchedEntity: verdict.matchedEntity,
               };
               const aiMsg: ChatMessage = {
                 id: uid(),
                 role: "ai",
                 type: "spoiler-blocked",
-                content: spoilerQueueCopy(REVEAL_CHAPTER),
+                content:
+                  verdict.spoilerCopy ?? spoilerQueueCopy(revealChapter),
                 pendingId,
                 createdAt: Date.now(),
               };
@@ -352,8 +398,9 @@ export const useAppStore = create<AppStoreState>()(
             }));
 
             let firstChunk = true;
+            let answer;
             try {
-              await mockChatResponse(trimmed, ctx.paragraphId, (partial) => {
+              answer = await provider.streamAsk(trimmed, aiCtx, (partial) => {
                 set((s) => ({
                   isAiTyping: firstChunk ? false : s.isAiTyping,
                   chatMessages: s.chatMessages.map((m) =>
@@ -380,9 +427,18 @@ export const useAppStore = create<AppStoreState>()(
               return;
             }
 
+            const finalCitations =
+              answer.citations.length > 0 ? answer.citations : undefined;
             set((s) => ({
               chatMessages: s.chatMessages.map((m) =>
-                m.id === aiId ? { ...m, isStreaming: false } : m,
+                m.id === aiId
+                  ? {
+                      ...m,
+                      isStreaming: false,
+                      citations: finalCitations,
+                      conceptId: answer.conceptId,
+                    }
+                  : m,
               ),
               isAiTyping: false,
             }));
@@ -394,6 +450,21 @@ export const useAppStore = create<AppStoreState>()(
     }),
     {
       name: "sanweishuwu-app",
+      version: 2,
+      migrate: (persisted, fromVersion) => {
+        const p = (persisted ?? {}) as Partial<AppStoreState>;
+        if (fromVersion < 2 && Array.isArray(p.pendingQuestions)) {
+          p.pendingQuestions = p.pendingQuestions.map((q) => {
+            if (!q) return q;
+            const upgraded: PendingQuestion = { ...q };
+            if (!upgraded.status) upgraded.status = "pending";
+            // v1 老数据没有 revealAfterParagraphId；保留 undefined，
+            // setReadingAnchor 的 sweep 不会误判，BookFinishedExperience 仍读 revealAfterChapter。
+            return upgraded;
+          });
+        }
+        return p as AppStoreState;
+      },
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? window.localStorage : memoryStorage,
       ),

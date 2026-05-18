@@ -370,12 +370,40 @@ const RAW_NODES: Raw[] = [
   },
 ];
 
-export function getMapNodesForBook(bookId: string): MapNode[] {
+import { getAiMapNodes } from "@/app/lib/ai/mapNodes";
+import type { ChatMessage, PendingQuestion } from "@/app/lib/mock/chat";
+
+/**
+ * 历史保留的多模态种子节点（image / bgm）。
+ * Step 5 起，character / dialogue / pending / bookmark 由 ai/mapNodes.ts 派生；
+ * image / bgm 仍由这里透传，归成员 3 维护。
+ */
+function multimodalRawNodes(): MapNode[] {
+  return RAW_NODES.filter((r) => r.type === "image" || r.type === "bgm").map(
+    (r) => {
+      const { hoursAgo, ...rest } = r;
+      return { ...rest, timestamp: ago(hoursAgo) };
+    },
+  );
+}
+
+export interface GetMapNodesOptions {
+  chatMessages?: ChatMessage[];
+  pendingQuestions?: PendingQuestion[];
+  demoNow?: Date;
+}
+
+export function getMapNodesForBook(
+  bookId: string,
+  opts: GetMapNodesOptions = {},
+): MapNode[] {
   if (bookId !== "little-prince") return [];
-  return RAW_NODES.map((r) => {
-    const { hoursAgo, ...rest } = r;
-    return { ...rest, timestamp: ago(hoursAgo) };
-  }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  return getAiMapNodes(bookId, {
+    passthroughMultimodalNodes: multimodalRawNodes(),
+    chatMessages: opts.chatMessages,
+    pendingQuestions: opts.pendingQuestions,
+    demoNow: opts.demoNow ?? MAP_DEMO_NOW,
+  });
 }
 
 export type MapFilterTab = "all" | "dialogue" | "image" | "character" | "pending";

@@ -131,6 +131,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
   const chapters = getChaptersForBook(bookId);
   const readerProgressByBook = useAppStore((s) => s.readerProgressByBook);
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
+  const chatMessages = useAppStore((s) => s.chatMessages);
   const mapSessionByBook = useAppStore((s) => s.mapSessionByBook);
   const setMapSession = useAppStore((s) => s.setMapSession);
 
@@ -147,7 +148,10 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
   );
   const currentCh = progress?.chapterIndex ?? 0;
 
-  const baseNodes = useMemo(() => getMapNodesForBook(bookId), [bookId]);
+  const baseNodes = useMemo(
+    () => getMapNodesForBook(bookId, { chatMessages, pendingQuestions }),
+    [bookId, chatMessages, pendingQuestions],
+  );
   const stats = useMemo(() => getLittlePrinceMapStats(baseNodes), [baseNodes]);
 
   const liveCurrent: MapNode | null = useMemo(() => {
