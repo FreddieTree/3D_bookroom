@@ -1,22 +1,42 @@
-# 3D Bookroom
+# 三维书屋
 
-MiniMax AI app project workspace for the 3D bookroom iOS application.
+AI-powered reading companion · OYSS × MiniMax Hackathon 2026
 
-## Project Structure
+## 项目简介
 
-- `ios/` - iOS app source code and Xcode project.
-- `docs/` - requirements, meeting notes, planning documents, and project records.
-- `design/` - UI drafts, prototypes, icons, screenshots, and visual assets.
-- `research/` - references, technical investigation notes, and learning materials.
-- `assets/` - shared media and reusable project assets.
+AI 陪你读完每一本你想读但读不完的书。你的进度、画面、旋律，每一次阅读都不一样。
 
-## Team Workflow
+## 团队分工
 
-Use Git branches for daily work:
+- 成员 1：阅读器 UI + APP 框架 + token 系统 + 集成
+- 成员 2：长上下文 RAG + 全书剧透标注 + 悬念队列状态机 + 进度感知逻辑
+- 成员 3：图 / 视频 / 音乐 / 语音的生成 pipeline + 视觉风格设定
 
-- `main` - stable code only.
-- `dev` - integration branch for active development.
-- `feature/*` - new features.
-- `fix/*` - bug fixes.
+## 技术栈
 
-Do not commit personal temporary files, Xcode user state, build outputs, or local credentials.
+- Next.js 16 + TypeScript + Tailwind CSS
+- shadcn/ui + Framer Motion
+- Zustand 状态管理
+- Vercel 部署 + PWA
+- MiniMax API（M2.5, Speech 2.6, Image-01, Music 2.6, Hailuo 02）
+
+## 本地开发
+
+\`\`\`bash
+git clone https://github.com/FHY163valey/3D_bookroom.git
+cd 3D_bookroom
+npm install
+npm run dev
+\`\`\`
+
+打开 http://localhost:3000
+
+## 部署
+
+push 到 main 分支，Vercel 自动部署。
+
+## 文档
+
+- docs/ARCHITECTURE.md - 架构说明
+- docs/API.md - 接口约定
+- docs/CONVENTIONS.md - 代码规范
