@@ -29,7 +29,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.theme-light) {
     color-scheme: dark;
 
     --background: oklch(from #1a1611 l c h);
@@ -69,6 +69,68 @@
   }
 }
 
+:root.theme-dark {
+  color-scheme: dark;
+
+  --background: oklch(from #1a1611 l c h);
+  --foreground: oklch(from #f5edde l c h);
+  --primary: color-mix(
+    in oklch,
+    oklch(from #b8763e l c h) 88%,
+    oklch(from #f5edde l c h) 12%
+  );
+  --primary-foreground: oklch(from #1a1611 l c h);
+  --accent: color-mix(
+    in oklch,
+    oklch(from #4a6b5c l c h) 90%,
+    oklch(from #f5edde l c h) 10%
+  );
+  --accent-foreground: oklch(from #f5edde l c h);
+  --destructive: color-mix(
+    in oklch,
+    oklch(from #c44536 l c h) 92%,
+    oklch(from #f5edde l c h) 8%
+  );
+  --destructive-foreground: oklch(from #faf6f0 l c h);
+
+  --muted: color-mix(in oklch, oklch(from #f5edde l c h) 10%, oklch(from #1a1611 l c h));
+  --muted-foreground: color-mix(in oklch, oklch(from #f5edde l c h) 58%, transparent);
+
+  --frame: color-mix(in oklch, oklch(from #1a1611 l c h) 92%, black);
+  --border: color-mix(in oklch, oklch(from #f5edde l c h) 14%, oklch(from #1a1611 l c h));
+  --ring: color-mix(
+    in oklch,
+    oklch(from #b8763e l c h) 85%,
+    oklch(from #f5edde l c h) 15%
+  );
+
+  --shadow-soft: 0 14px 48px -20px
+    color-mix(in oklch, black 55%, oklch(from #b8763e l c h) 8%);
+}
+
+:root.theme-light {
+  color-scheme: light;
+
+  --background: oklch(from #faf6f0 l c h);
+  --foreground: oklch(from #3d342b l c h);
+  --primary: oklch(from #b8763e l c h);
+  --primary-foreground: oklch(from #faf6f0 l c h);
+  --accent: oklch(from #4a6b5c l c h);
+  --accent-foreground: oklch(from #faf6f0 l c h);
+  --destructive: oklch(from #c44536 l c h);
+  --destructive-foreground: oklch(from #faf6f0 l c h);
+
+  --muted: color-mix(in oklch, oklch(from #3d342b l c h) 8%, oklch(from #faf6f0 l c h));
+  --muted-foreground: color-mix(in oklch, oklch(from #3d342b l c h) 62%, transparent);
+
+  --frame: oklch(from #1a1611 l c h);
+  --border: color-mix(in oklch, oklch(from #3d342b l c h) 12%, oklch(from #faf6f0 l c h));
+  --ring: oklch(from #b8763e l c h);
+
+  --shadow-soft: 0 12px 40px -18px
+    color-mix(in oklch, oklch(from #3d342b l c h) 28%, transparent);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -101,5 +163,29 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans-stack);
+  }
+}
+
+@layer utilities {
+  .reader-paragraph-highlight {
+    background-color: color-mix(in oklch, var(--color-primary) 14%, transparent);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .reader-pending-breathe {
+    animation: reader-pending-breathe 1.65s ease-in-out infinite;
+  }
+}
+
+@keyframes reader-pending-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.82;
+  }
+  50% {
+    transform: scale(1.22);
+    opacity: 1;
   }
 }

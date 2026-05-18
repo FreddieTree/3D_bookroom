@@ -70,10 +70,10 @@ export function HomeShelf() {
             className="min-w-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <span className="font-serif block text-[1.35rem] font-semibold leading-none tracking-tight text-foreground">
-              活字
+              三维书屋
             </span>
-            <span className="mt-1 block text-[0.65rem] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-              Living Letters
+            <span className="mt-1 block text-[0.65rem] font-medium tracking-[0.12em] text-muted-foreground">
+              沉浸式阅读伴侣
             </span>
           </Link>
           <Link

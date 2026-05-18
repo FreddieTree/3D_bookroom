@@ -3,62 +3,93 @@ export interface BookMeta {
   title: string;
   titleEn: string;
   author: string;
-  /** Solid / mixed CSS color for placeholder cover (theme-aware). */
   coverColor: string;
   coverEmoji?: string;
   shortDesc: string;
   totalChapters: number;
   estimatedHours: number;
   isReady: boolean;
-  /** 0–1 reading progress */
   progress: number;
+  /** 对应 `sample_book/` 内文件名（可多条，便于辨认重复源文件）。 */
+  sourceFiles?: string[];
 }
+
+/**
+ * EPUB 文件名存于仓库 `sample_book/`。托尔斯泰《伊凡·伊里奇之死》因编码差异曾出现两条文件，
+ * 书目中只保留一条（同一作品不重复上架）。
+ */
+export const SAMPLE_BOOK_DEDUPE_NOTE =
+  "death-of-ivan-ilyich: 合并重复 epub（Толстой / Толстой 文件名变体）";
 
 export const BOOKS: BookMeta[] = [
   {
     id: "little-prince",
     title: "小王子",
     titleEn: "The Little Prince",
-    author: "安东尼·德·圣-埃克苏佩里",
+    author: "安托万·德·圣-埃克苏佩里",
     coverColor:
       "color-mix(in oklch, var(--color-primary) 42%, var(--color-background))",
     coverEmoji: "🌹",
     shortDesc:
-      "一部写给成年人的童话：关于孤独、驯养与真心，在星星与玫瑰之间找到属于你的一朵花。",
-    totalChapters: 27,
+      "童话与哲理交织的星际旅程：孤独、驯养与玫瑰。试读本内含前三章中文演示正文。",
+    totalChapters: 3,
     estimatedHours: 2,
     isReady: true,
-    progress: 0.3,
+    progress: 0.28,
+    sourceFiles: [
+      "小王子 (圣埃克苏佩里,Antoine de Saint-Exupery,马振骋) (z-library.sk, 1lib.sk, z-lib.sk).epub",
+    ],
   },
   {
-    id: "1984",
-    title: "1984",
-    titleEn: "Nineteen Eighty-Four",
-    author: "乔治·奥威尔",
+    id: "aq-zhengzhuan",
+    title: "阿Q正传",
+    titleEn: "The True Story of Ah Q",
+    author: "鲁迅",
     coverColor:
-      "color-mix(in oklch, var(--color-accent) 38%, var(--color-background))",
-    coverEmoji: "👁️",
-    shortDesc:
-      "老大哥在看着你。一部关于真理、语言与权力的警世寓言，冷峻而灼热。",
-    totalChapters: 24,
-    estimatedHours: 8,
+      "color-mix(in oklch, var(--color-accent) 34%, var(--color-background))",
+    coverEmoji: "📜",
+    shortDesc: "国民性解剖的经典短篇，冷峻锋利。整书解析与正文将在后续 Phase 接入。",
+    totalChapters: 1,
+    estimatedHours: 1,
     isReady: false,
     progress: 0,
+    sourceFiles: [
+      "阿Q正传 (鲁迅) (z-library.sk, 1lib.sk, z-lib.sk).epub",
+    ],
   },
   {
-    id: "old-man-sea",
-    title: "老人与海",
-    titleEn: "The Old Man and the Sea",
-    author: "欧内斯特·海明威",
+    id: "village-teacher",
+    title: "乡村教师",
+    titleEn: "The Village Teacher",
+    author: "刘慈欣",
     coverColor:
-      "color-mix(in oklch, var(--color-destructive) 32%, var(--color-muted))",
-    coverEmoji: "🎣",
-    shortDesc:
-      "人可以被打败，但不能被摧毁。大海、马林鱼与狮子，写在骨头里的尊严。",
+      "color-mix(in oklch, var(--color-destructive) 26%, var(--color-muted))",
+    coverEmoji: "🌌",
+    shortDesc: "科幻自选集名篇：渺小与广袤的对照。预处理完成后可沉浸式阅读。",
+    totalChapters: 1,
+    estimatedHours: 2,
+    isReady: false,
+    progress: 0,
+    sourceFiles: [
+      "乡村教师·刘慈欣科幻自选集 (刘慈欣) (z-library.sk, 1lib.sk, z-lib.sk).epub",
+    ],
+  },
+  {
+    id: "death-of-ivan-ilyich",
+    title: "伊凡·伊里奇之死",
+    titleEn: "The Death of Ivan Ilyich",
+    author: "列夫·托尔斯泰",
+    coverColor:
+      "color-mix(in oklch, oklch(from #3d342b l c h) 22%, var(--color-muted))",
+    coverEmoji: "🕯️",
+    shortDesc: "死亡与生命意义的终极诘问。书目条目合并了目录中的重复文件。",
     totalChapters: 12,
-    estimatedHours: 3,
+    estimatedHours: 4,
     isReady: false,
     progress: 0,
+    sourceFiles: [
+      "伊凡・伊里奇之死 … 托尔斯泰 … (z-lib).epub [目录中曾存 2 份同书异编码文件名，已合并]",
+    ],
   },
 ];
 

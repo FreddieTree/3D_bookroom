@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 
 import { StoreHydration } from "@/app/components/providers/StoreHydration";
+import { ThemeApplier } from "@/app/components/theme/ThemeApplier";
 
 import "./globals.css";
 
@@ -77,7 +78,10 @@ export default function RootLayout({
       className={`${inter.variable} ${lora.variable} ${notoSansSc.variable} ${notoSerifSc.variable} h-full`}
     >
       <body className="min-h-dvh">
-        <StoreHydration>{children}</StoreHydration>
+        <StoreHydration>
+          <ThemeApplier />
+          {children}
+        </StoreHydration>
       </body>
     </html>
   );

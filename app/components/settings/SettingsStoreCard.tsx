@@ -6,6 +6,8 @@ export function SettingsStoreCard() {
   const currentBookId = useAppStore((s) => s.currentBookId);
   const currentChapterIndex = useAppStore((s) => s.currentChapterIndex);
   const currentParagraphId = useAppStore((s) => s.currentParagraphId);
+  const readerSettings = useAppStore((s) => s.readerSettings);
+  const readerProgressByBook = useAppStore((s) => s.readerProgressByBook);
 
   return (
     <section
@@ -32,6 +34,24 @@ export function SettingsStoreCard() {
           <dt className="text-muted-foreground">currentParagraphId</dt>
           <dd className="font-mono text-right text-foreground">
             {currentParagraphId ?? "—"}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">reader theme</dt>
+          <dd className="text-right text-foreground">{readerSettings.theme}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">font / brightness</dt>
+          <dd className="text-right text-foreground">
+            {readerSettings.fontSize}px · {readerSettings.brightness.toFixed(2)}×
+          </dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">per-book progress keys</dt>
+          <dd className="font-mono text-right text-xs text-foreground">
+            {Object.keys(readerProgressByBook).length
+              ? Object.keys(readerProgressByBook).join(", ")
+              : "—"}
           </dd>
         </div>
       </dl>

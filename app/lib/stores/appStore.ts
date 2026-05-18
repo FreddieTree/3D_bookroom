@@ -5,14 +5,77 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 
+import {
+  mockChatResponse,
+  mockReleaseAnswer,
+  shouldDeferAsSpoiler,
+  spoilerQueueCopy,
+  type ChatMessage,
+  type PendingQuestion,
+} from "@/app/lib/mock/chat";
+
+export type ReaderThemeMode = "light" | "dark" | "system";
+
+export type ReaderSettings = {
+  fontSize: 14 | 16 | 18 | 20 | 22;
+  brightness: number;
+  theme: ReaderThemeMode;
+  bgmEnabled: boolean;
+  voiceProfile: string;
+};
+
+export type BookReaderProgress = {
+  chapterIndex: number;
+  paragraphId: string | null;
+};
+
+export const DEFAULT_READER_SETTINGS: ReaderSettings = {
+  fontSize: 18,
+  brightness: 1,
+  theme: "system",
+  bgmEnabled: false,
+  voiceProfile: "ceramic",
+};
+
+function uid(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 export type AppStoreState = {
   currentBookId: string | null;
   currentChapterIndex: number;
   currentParagraphId: string | null;
+  readerSettings: ReaderSettings;
+  readerProgressByBook: Record<string, BookReaderProgress>;
+
+  chatMessages: ChatMessage[];
+  isChatOpen: boolean;
+  chatDrawerHeightPct: number;
+  pendingQuestions: PendingQuestion[];
+  isAiTyping: boolean;
+
   setCurrentBookId: (id: string | null) => void;
   setCurrentChapterIndex: (index: number) => void;
   setCurrentParagraphId: (id: string | null) => void;
+  setReaderSettings: (patch: Partial<ReaderSettings>) => void;
+  setReadingAnchor: (
+    bookId: string,
+    chapterIndex: number,
+    paragraphId: string | null,
+  ) => void;
   resetReaderPosition: () => void;
+
+  openChat: () => void;
+  closeChat: () => void;
+  setChatDrawerHeightPct: (pct: number) => void;
+  sendChatMessage: (
+    text: string,
+    ctx: { bookId: string; paragraphId: string | null; currentChapterIndex: number },
+  ) => void;
+  /** 释放队首悬念（红点 / 显式调用） */
+  releasePending: () => void;
+  /** 清空对话（可选，调试用） */
+  clearChat: () => void;
 };
 
 const memoryStorage: StateStorage = {
@@ -21,19 +84,157 @@ const memoryStorage: StateStorage = {
   removeItem: () => undefined,
 };
 
+const CHAT_HEIGHT_DEFAULT = 60;
+const REVEAL_CHAPTER = 3;
+
 export const useAppStore = create<AppStoreState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentBookId: null,
       currentChapterIndex: 0,
       currentParagraphId: null,
+      readerSettings: { ...DEFAULT_READER_SETTINGS },
+      readerProgressByBook: {},
+
+      chatMessages: [],
+      isChatOpen: false,
+      chatDrawerHeightPct: CHAT_HEIGHT_DEFAULT,
+      pendingQuestions: [],
+      isAiTyping: false,
+
       setCurrentBookId: (currentBookId) => set({ currentBookId }),
       setCurrentChapterIndex: (currentChapterIndex) =>
         set({ currentChapterIndex }),
       setCurrentParagraphId: (currentParagraphId) =>
         set({ currentParagraphId }),
+
+      setReaderSettings: (patch) =>
+        set((s) => ({
+          readerSettings: { ...s.readerSettings, ...patch },
+        })),
+
+      setReadingAnchor: (bookId, chapterIndex, paragraphId) =>
+        set((s) => ({
+          currentChapterIndex: chapterIndex,
+          currentParagraphId: paragraphId,
+          readerProgressByBook: {
+            ...s.readerProgressByBook,
+            [bookId]: { chapterIndex, paragraphId },
+          },
+        })),
+
       resetReaderPosition: () =>
         set({ currentChapterIndex: 0, currentParagraphId: null }),
+
+      openChat: () => set({ isChatOpen: true }),
+
+      closeChat: () =>
+        set({ isChatOpen: false, chatDrawerHeightPct: CHAT_HEIGHT_DEFAULT }),
+
+      setChatDrawerHeightPct: (pct) =>
+        set({ chatDrawerHeightPct: Math.min(90, Math.max(35, pct)) }),
+
+      clearChat: () =>
+        set({ chatMessages: [], pendingQuestions: [], isAiTyping: false }),
+
+      releasePending: () => {
+        const pending = get().pendingQuestions[0];
+        if (!pending) {
+          set({ isChatOpen: true });
+          return;
+        }
+        const msg: ChatMessage = {
+          id: uid(),
+          role: "ai",
+          type: "pending-release",
+          content: mockReleaseAnswer(pending),
+          createdAt: Date.now(),
+        };
+        set((s) => ({
+          pendingQuestions: s.pendingQuestions.slice(1),
+          chatMessages: [...s.chatMessages, msg],
+          isChatOpen: true,
+        }));
+      },
+
+      sendChatMessage: (text, ctx) => {
+        const trimmed = text.trim();
+        if (!trimmed) return;
+
+        const userMsg: ChatMessage = {
+          id: uid(),
+          role: "user",
+          type: "normal",
+          content: trimmed,
+          createdAt: Date.now(),
+        };
+
+        set((s) => ({
+          chatMessages: [...s.chatMessages, userMsg],
+          isAiTyping: true,
+        }));
+
+        void (async () => {
+          if (shouldDeferAsSpoiler(trimmed)) {
+            const pendingId = uid();
+            const pending: PendingQuestion = {
+              id: pendingId,
+              userQuestion: trimmed,
+              paragraphId: ctx.paragraphId,
+              revealAfterChapter: REVEAL_CHAPTER,
+            };
+            const aiMsg: ChatMessage = {
+              id: uid(),
+              role: "ai",
+              type: "spoiler-blocked",
+              content: spoilerQueueCopy(REVEAL_CHAPTER),
+              pendingId,
+              createdAt: Date.now(),
+            };
+            set((s) => ({
+              isAiTyping: false,
+              pendingQuestions: [...s.pendingQuestions, pending],
+              chatMessages: [...s.chatMessages, aiMsg],
+            }));
+            return;
+          }
+
+          const aiId = uid();
+          set((s) => ({
+            chatMessages: [
+              ...s.chatMessages,
+              {
+                id: aiId,
+                role: "ai",
+                type: "normal",
+                content: "",
+                createdAt: Date.now(),
+                isStreaming: true,
+              },
+            ],
+          }));
+
+          let firstChunk = true;
+          await mockChatResponse(trimmed, ctx.paragraphId, (partial) => {
+            set((s) => ({
+              isAiTyping: firstChunk ? false : s.isAiTyping,
+              chatMessages: s.chatMessages.map((m) =>
+                m.id === aiId
+                  ? { ...m, content: partial, isStreaming: true }
+                  : m,
+              ),
+            }));
+            firstChunk = false;
+          });
+
+          set((s) => ({
+            chatMessages: s.chatMessages.map((m) =>
+              m.id === aiId ? { ...m, isStreaming: false } : m,
+            ),
+            isAiTyping: false,
+          }));
+        })();
+      },
     }),
     {
       name: "sanweishuwu-app",
@@ -44,7 +245,34 @@ export const useAppStore = create<AppStoreState>()(
         currentBookId: state.currentBookId,
         currentChapterIndex: state.currentChapterIndex,
         currentParagraphId: state.currentParagraphId,
+        readerSettings: state.readerSettings,
+        readerProgressByBook: state.readerProgressByBook,
+        chatMessages: state.chatMessages,
+        pendingQuestions: state.pendingQuestions,
       }),
+      merge: (persisted, current) => {
+        const p = persisted as Partial<AppStoreState> | undefined;
+        return {
+          ...current,
+          ...p,
+          readerSettings: {
+            ...DEFAULT_READER_SETTINGS,
+            ...current.readerSettings,
+            ...p?.readerSettings,
+          },
+          readerProgressByBook: {
+            ...current.readerProgressByBook,
+            ...p?.readerProgressByBook,
+          },
+          chatMessages: p?.chatMessages ?? current.chatMessages,
+          pendingQuestions:
+            p?.pendingQuestions ?? current.pendingQuestions,
+          isChatOpen: false,
+          isAiTyping: false,
+        };
+      },
     },
   ),
 );
+
+export type { ChatMessage, PendingQuestion };
