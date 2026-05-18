@@ -17,17 +17,31 @@ import type { MapFilterTab } from "@/app/lib/mock/map-data";
 
 export type ReaderThemeMode = "light" | "dark" | "system";
 
+export type ReadingDisplayMode = "standard" | "immersive";
+
 export type ReaderSettings = {
   fontSize: 14 | 16 | 18 | 20 | 22;
   brightness: number;
   theme: ReaderThemeMode;
   bgmEnabled: boolean;
   voiceProfile: string;
+  /** 沉浸朗读：大号字 + 自动锚点推进 */
+  readingDisplayMode: ReadingDisplayMode;
+  /** 朗读倍速（相对基准 1） */
+  readSpeed: number;
 };
 
 export type BookReaderProgress = {
   chapterIndex: number;
   paragraphId: string | null;
+};
+
+export type ParagraphVisual = {
+  id: string;
+  emoji: string;
+  colorFrom: string;
+  colorTo: string;
+  createdAt: number;
 };
 
 export const DEFAULT_READER_SETTINGS: ReaderSettings = {
@@ -36,6 +50,8 @@ export const DEFAULT_READER_SETTINGS: ReaderSettings = {
   theme: "system",
   bgmEnabled: false,
   voiceProfile: "ceramic",
+  readingDisplayMode: "standard",
+  readSpeed: 1,
 };
 
 function uid(): string {
@@ -87,6 +103,23 @@ export type AppStoreState = {
   releasePending: () => void;
   /** 清空对话（可选，调试用） */
   clearChat: () => void;
+
+  /** 段落配图（Mock placeholder），按书 / 段落 id */
+  paragraphVisualsByBook: Record<string, Record<string, ParagraphVisual[]>>;
+  addParagraphVisual: (
+    bookId: string,
+    paragraphId: string,
+    draft: Pick<ParagraphVisual, "emoji" | "colorFrom" | "colorTo">,
+  ) => void;
+  removeParagraphVisual: (
+    bookId: string,
+    paragraphId: string,
+    visualId: string,
+  ) => void;
+
+  /** 阅读器 BGM 小条是否折叠 */
+  readerBgmBarCollapsed: boolean;
+  setReaderBgmBarCollapsed: (collapsed: boolean) => void;
 };
 
 const memoryStorage: StateStorage = {
@@ -114,6 +147,9 @@ export const useAppStore = create<AppStoreState>()(
       isAiTyping: false,
 
       mapSessionByBook: {},
+
+      paragraphVisualsByBook: {},
+      readerBgmBarCollapsed: false,
 
       setCurrentBookId: (currentBookId) => set({ currentBookId }),
       setCurrentChapterIndex: (currentChapterIndex) =>
@@ -163,6 +199,44 @@ export const useAppStore = create<AppStoreState>()(
             },
           };
         }),
+
+      addParagraphVisual: (bookId, paragraphId, draft) =>
+        set((s) => {
+          const byBook = s.paragraphVisualsByBook[bookId] ?? {};
+          const list = byBook[paragraphId] ?? [];
+          const next: ParagraphVisual = {
+            id: uid(),
+            ...draft,
+            createdAt: Date.now(),
+          };
+          return {
+            paragraphVisualsByBook: {
+              ...s.paragraphVisualsByBook,
+              [bookId]: {
+                ...byBook,
+                [paragraphId]: [...list, next],
+              },
+            },
+          };
+        }),
+
+      removeParagraphVisual: (bookId, paragraphId, visualId) =>
+        set((s) => {
+          const byBook = s.paragraphVisualsByBook[bookId] ?? {};
+          const list = byBook[paragraphId] ?? [];
+          return {
+            paragraphVisualsByBook: {
+              ...s.paragraphVisualsByBook,
+              [bookId]: {
+                ...byBook,
+                [paragraphId]: list.filter((v) => v.id !== visualId),
+              },
+            },
+          };
+        }),
+
+      setReaderBgmBarCollapsed: (readerBgmBarCollapsed) =>
+        set({ readerBgmBarCollapsed }),
 
       releasePending: () => {
         const pending = get().pendingQuestions[0];
@@ -277,6 +351,8 @@ export const useAppStore = create<AppStoreState>()(
         chatMessages: state.chatMessages,
         pendingQuestions: state.pendingQuestions,
         mapSessionByBook: state.mapSessionByBook,
+        paragraphVisualsByBook: state.paragraphVisualsByBook,
+        readerBgmBarCollapsed: state.readerBgmBarCollapsed,
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AppStoreState> | undefined;
@@ -299,6 +375,12 @@ export const useAppStore = create<AppStoreState>()(
             ...current.mapSessionByBook,
             ...p?.mapSessionByBook,
           },
+          paragraphVisualsByBook: {
+            ...current.paragraphVisualsByBook,
+            ...p?.paragraphVisualsByBook,
+          },
+          readerBgmBarCollapsed:
+            p?.readerBgmBarCollapsed ?? current.readerBgmBarCollapsed,
           isChatOpen: false,
           isAiTyping: false,
         };

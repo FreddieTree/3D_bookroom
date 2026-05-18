@@ -85,6 +85,76 @@ export function ReaderSettingsDrawer({
             <div className="flex-1 space-y-7 overflow-y-auto px-4 py-6">
               <section>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  朗读模式
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDraft((d) => ({
+                        ...d,
+                        readingDisplayMode: "standard",
+                      }))
+                    }
+                    className={cn(
+                      "rounded-xl px-3 py-2.5 text-left text-sm font-medium",
+                      draft.readingDisplayMode === "standard"
+                        ? "bg-muted text-foreground ring-1 ring-border"
+                        : "text-muted-foreground hover:bg-muted/80",
+                    )}
+                  >
+                    标准阅读
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDraft((d) => ({
+                        ...d,
+                        readingDisplayMode: "immersive",
+                      }))
+                    }
+                    className={cn(
+                      "rounded-xl px-3 py-2.5 text-left text-sm font-medium",
+                      draft.readingDisplayMode === "immersive"
+                        ? "bg-muted text-foreground ring-1 ring-border"
+                        : "text-muted-foreground hover:bg-muted/80",
+                    )}
+                  >
+                    AI 沉浸朗读
+                  </button>
+                </div>
+              </section>
+
+              <section>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  沉浸朗读 · 倍速
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {([0.75, 1, 1.25, 1.5] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() =>
+                        setDraft((d) => ({
+                          ...d,
+                          readSpeed: s,
+                        }))
+                      }
+                      className={cn(
+                        "h-9 min-w-[2.75rem] rounded-lg px-2 text-xs font-semibold tabular-nums",
+                        draft.readSpeed === s
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground",
+                      )}
+                    >
+                      {s}x
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   字号
                 </p>
                 <div className="flex flex-wrap gap-2">

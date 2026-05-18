@@ -8,7 +8,13 @@ import Link from "next/link";
 
 import { ChatDrawer } from "@/app/components/chat/ChatDrawer";
 import { VoiceRecorderOverlay } from "@/app/components/chat/VoiceRecorderOverlay";
+import { ImageGeneration } from "@/app/components/multimodal/ImageGeneration";
+import { ParagraphVisualAlbum } from "@/app/components/multimodal/ParagraphVisualAlbum";
+import { RadioDramaMode } from "@/app/components/multimodal/RadioDramaMode";
+import { ReaderBgmStrip } from "@/app/components/reader/ReaderBgmStrip";
+import { ImmersiveReadChrome } from "@/app/components/reader/ImmersiveReadChrome";
 import { ReaderSettingsDrawer } from "@/app/components/reader/ReaderSettingsDrawer";
+import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
 import { cn } from "@/app/lib/utils";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
 import { getBookById } from "@/app/lib/data/books";
@@ -24,9 +30,18 @@ type ReaderShellProps = {
   bookId: string;
   /** 从阅读地图带锚点进入时由 URL `?p=` 传入 */
   openParagraphId?: string | null;
+  /** 由章节封面进入时 `?chapter=`（0-based） */
+  openChapterIndex?: number | null;
+  /** 由章节封面「开始阅读」进入，用于 BGM 渐隐 */
+  fromCover?: boolean;
 };
 
-export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps) {
+export function ReaderShell({
+  bookId,
+  openParagraphId = null,
+  openChapterIndex = null,
+  fromCover = false,
+}: ReaderShellProps) {
   const book = getBookById(bookId);
   const chapters = getChaptersForBook(bookId);
   const { back } = useNavigation();
@@ -41,11 +56,28 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
   const fontSize = useAppStore((s) => s.readerSettings.fontSize);
   const brightness = useAppStore((s) => s.readerSettings.brightness);
+  const readingDisplayMode = useAppStore(
+    (s) => s.readerSettings.readingDisplayMode,
+  );
+  const readSpeed = useAppStore((s) => s.readerSettings.readSpeed);
+  const paragraphVisualsByBook = useAppStore(
+    (s) => s.paragraphVisualsByBook,
+  );
 
   const [chapterIndex, setChapterIndex] = useState(0);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chapterEndVisible, setChapterEndVisible] = useState(false);
+  const [immersivePlaying, setImmersivePlaying] = useState(true);
+  const [imageGenParagraph, setImageGenParagraph] = useState<Paragraph | null>(
+    null,
+  );
+  const [radioParagraph, setRadioParagraph] = useState<Paragraph | null>(
+    null,
+  );
+  const [expandedAlbumFor, setExpandedAlbumFor] = useState<string | null>(null);
+
+  const coverFadeStarted = useRef(false);
 
   const [menu, setMenu] = useState<{
     paragraph: Paragraph;
@@ -183,6 +215,53 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
   ]);
 
   useEffect(() => {
+    if (
+      openParagraphId != null ||
+      openChapterIndex == null ||
+      !chapters?.length
+    )
+      return;
+    const idx = Math.min(Math.max(0, openChapterIndex), chapters.length - 1);
+    const firstId = chapters[idx]?.paragraphs[0]?.id ?? null;
+    queueMicrotask(() => {
+      setChapterIndex(idx);
+      setReadingAnchor(bookId, idx, firstId);
+      lastIoParagraph.current = firstId;
+    });
+    const t = window.setTimeout(() => {
+      if (firstId) {
+        document
+          .getElementById(firstId)
+          ?.scrollIntoView({ block: "center" });
+      }
+    }, 140);
+    router.replace(`/book/${bookId}/read`, { scroll: false });
+    return () => window.clearTimeout(t);
+  }, [
+    openChapterIndex,
+    openParagraphId,
+    bookId,
+    chapters,
+    setReadingAnchor,
+    router,
+  ]);
+
+  useEffect(() => {
+    if (!fromCover || coverFadeStarted.current) return;
+    coverFadeStarted.current = true;
+    void resumeAudioContext().then(() => {
+      const h = startMockAmbient({ durationCapMs: 999_999, gain: 0.052 });
+      h.fadeOutAndStop(5000);
+    });
+  }, [fromCover]);
+
+  useEffect(() => {
+    if (readingDisplayMode === "immersive") {
+      queueMicrotask(() => setImmersivePlaying(true));
+    }
+  }, [readingDisplayMode]);
+
+  useEffect(() => {
     if (!chapter) return;
     const bookmark =
       useAppStore.getState().readerProgressByBook[bookId]?.paragraphId;
@@ -267,6 +346,40 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
       )
     : 0;
 
+  const displayFont =
+    readingDisplayMode === "immersive" ? fontSize * 1.22 : fontSize;
+
+  useEffect(() => {
+    if (readingDisplayMode !== "immersive" || !immersivePlaying || !chapter) {
+      return;
+    }
+    const idx = chapter.paragraphs.findIndex((p) => p.id === activeParagraphId);
+    if (idx < 0) return;
+    const para = chapter.paragraphs[idx]!;
+    const ms = Math.min(
+      14_000,
+      1800 / readSpeed + para.text.length * (42 / readSpeed),
+    );
+    const t = window.setTimeout(() => {
+      const next = chapter.paragraphs[idx + 1];
+      if (next) {
+        setReadingAnchor(bookId, chapterIndex, next.id);
+        lastIoParagraph.current = next.id;
+        document.getElementById(next.id)?.scrollIntoView({ block: "center" });
+      }
+    }, ms);
+    return () => window.clearTimeout(t);
+  }, [
+    readingDisplayMode,
+    immersivePlaying,
+    activeParagraphId,
+    chapter,
+    bookId,
+    chapterIndex,
+    readSpeed,
+    setReadingAnchor,
+  ]);
+
   if (!book || !chapters?.length) {
     return (
       <div className="font-sans flex min-h-dvh flex-col items-center justify-center gap-4 px-8 text-center">
@@ -295,7 +408,14 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
       <motion.header
         className="font-sans absolute left-0 right-0 top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md"
         initial={false}
-        animate={{ y: headerVisible ? 0 : -80 }}
+        animate={{
+          y:
+            readingDisplayMode === "immersive"
+              ? -80
+              : headerVisible
+                ? 0
+                : -80,
+        }}
         transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
         style={{ willChange: "transform" }}
       >
@@ -360,51 +480,70 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
 
       <div
         ref={scrollRef}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pt-[3.25rem] pb-[5.5rem]"
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[5.5rem] pt-[3.25rem]",
+          readingDisplayMode === "immersive" && "pb-32 pt-5",
+        )}
       >
         <article
           className="font-serif text-foreground"
           style={{
-            fontSize: `${fontSize}px`,
-            lineHeight: 1.8,
+            fontSize: `${displayFont}px`,
+            lineHeight: 1.85,
             paddingLeft: 24,
             paddingRight: 24,
             paddingTop: 8,
             paddingBottom: 32,
           }}
         >
-          {chapter?.paragraphs.map((para) => (
-            <p
-              key={para.id}
-              id={para.id}
-              data-paragraph-id={para.id}
-              className={cn(
-                pressingId === para.id && "reader-paragraph-highlight",
-              )}
-              style={{ marginBottom: "1.5em" }}
-            >
-              <span
-                className="cursor-default select-text"
-                onPointerDown={(e) => {
-                  if (e.button !== 0) return;
-                  startPress(para, e.clientX, e.clientY);
-                }}
-                onPointerMove={(e) => moveDuringPress(e.clientX, e.clientY)}
-                onPointerUp={() => {
-                  clearPressTimer();
-                  setPressingId(null);
-                  pressStart.current = null;
-                }}
-                onPointerCancel={() => {
-                  clearPressTimer();
-                  setPressingId(null);
-                  pressStart.current = null;
-                }}
-              >
-                {para.text}
-              </span>
-            </p>
-          ))}
+          {chapter?.paragraphs.map((para) => {
+            const visuals =
+              paragraphVisualsByBook[bookId]?.[para.id] ?? [];
+            return (
+              <div key={para.id}>
+                <p
+                  id={para.id}
+                  data-paragraph-id={para.id}
+                  className={cn(
+                    pressingId === para.id && "reader-paragraph-highlight",
+                  )}
+                  style={{ marginBottom: "0.35em" }}
+                >
+                  <span
+                    className="cursor-default select-text"
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return;
+                      startPress(para, e.clientX, e.clientY);
+                    }}
+                    onPointerMove={(e) => moveDuringPress(e.clientX, e.clientY)}
+                    onPointerUp={() => {
+                      clearPressTimer();
+                      setPressingId(null);
+                      pressStart.current = null;
+                    }}
+                    onPointerCancel={() => {
+                      clearPressTimer();
+                      setPressingId(null);
+                      pressStart.current = null;
+                    }}
+                  >
+                    {para.text}
+                  </span>
+                </p>
+                <ParagraphVisualAlbum
+                  bookId={bookId}
+                  paragraphId={para.id}
+                  visuals={visuals}
+                  expanded={expandedAlbumFor === para.id}
+                  onToggleExpanded={() =>
+                    setExpandedAlbumFor((cur) =>
+                      cur === para.id ? null : para.id,
+                    )
+                  }
+                />
+              </div>
+            );
+          })}
         </article>
 
         <AnimatePresence>
@@ -420,14 +559,9 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
                 type="button"
                 onClick={() => {
                   safeVibrate(15);
-                  const next = chapterIndex + 1;
-                  const nextChapter = chapters?.[next];
-                  const firstId = nextChapter?.paragraphs[0]?.id ?? null;
-                  setChapterIndex(next);
-                  setReadingAnchor(bookId, next, firstId);
-                  lastIoParagraph.current = firstId;
-                  scrollRef.current?.scrollTo({ top: 0 });
-                  setChapterEndVisible(false);
+                  router.push(
+                    `/book/${bookId}/chapter/${chapterIndex + 1}/cover`,
+                  );
                 }}
                 className="w-full rounded-2xl bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-soft)] transition-transform active:scale-[0.99]"
               >
@@ -438,38 +572,51 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
         </AnimatePresence>
       </div>
 
-      <footer className="font-sans sticky bottom-0 z-30 border-t border-border/70 bg-background/75 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-lg">
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="h-0.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-[width] duration-300"
-                style={{ width: `${progPct}%` }}
-              />
+      <footer className="font-sans sticky bottom-0 z-30 border-t border-border/70 bg-background/75 backdrop-blur-lg">
+        {readingDisplayMode === "standard" ? (
+          <ReaderBgmStrip bookId={bookId} chapterIndex={chapterIndex} />
+        ) : null}
+        {readingDisplayMode === "immersive" ? (
+          <ImmersiveReadChrome
+            chapterProgressPct={progPct}
+            immersivePlaying={immersivePlaying}
+            onTogglePlaying={() => setImmersivePlaying((v) => !v)}
+          />
+        ) : (
+          <div className="px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="h-0.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-300"
+                    style={{ width: `${progPct}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 text-[0.65rem] font-medium tabular-nums text-muted-foreground">
+                  第 {chapterIndex + 1} 章 · {Math.round(progPct)}%
+                </p>
+              </div>
+              <button
+                type="button"
+                onPointerDown={() => startFooterMicHold()}
+                onPointerUp={clearFooterMicHold}
+                onPointerCancel={clearFooterMicHold}
+                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-soft)] transition-transform active:scale-95"
+                aria-label="长按语音问 AI"
+              >
+                <Mic className="size-5" strokeWidth={1.85} />
+              </button>
+              <button
+                type="button"
+                onClick={() => openChat()}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="AI 对话"
+              >
+                <MessageCircle className="size-[1.25rem]" strokeWidth={1.75} />
+              </button>
             </div>
-            <p className="mt-1.5 text-[0.65rem] font-medium tabular-nums text-muted-foreground">
-              第 {chapterIndex + 1} 章 · {Math.round(progPct)}%
-            </p>
           </div>
-          <button
-            type="button"
-            onPointerDown={() => startFooterMicHold()}
-            onPointerUp={clearFooterMicHold}
-            onPointerCancel={clearFooterMicHold}
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-soft)] transition-transform active:scale-95"
-            aria-label="长按语音问 AI"
-          >
-            <Mic className="size-5" strokeWidth={1.85} />
-          </button>
-          <button
-            type="button"
-            onClick={() => openChat()}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="AI 对话"
-          >
-            <MessageCircle className="size-[1.25rem]" strokeWidth={1.75} />
-          </button>
-        </div>
+        )}
       </footer>
 
       <AnimatePresence>
@@ -502,12 +649,7 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
             >
               <MenuRow
                 label="🎨 生成画面"
-                onPick={() =>
-                  console.log(
-                    "[reader] generate image (placeholder)",
-                    menu.paragraph.id,
-                  )
-                }
+                onPick={() => setImageGenParagraph(menu.paragraph)}
                 onDone={() => setMenu(null)}
               />
               <MenuAskAiLongPress
@@ -523,9 +665,7 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
               />
               <MenuRow
                 label="🎭 广播剧朗读"
-                onPick={() =>
-                  console.log("[reader] drama read (placeholder)", menu.paragraph.id)
-                }
+                onPick={() => setRadioParagraph(menu.paragraph)}
                 onDone={() => setMenu(null)}
               />
               <button
@@ -557,6 +697,19 @@ export function ReaderShell({ bookId, openParagraphId = null }: ReaderShellProps
             currentChapterIndex: chapterIndex,
           })
         }
+      />
+
+      <ImageGeneration
+        bookId={bookId}
+        open={imageGenParagraph != null}
+        onClose={() => setImageGenParagraph(null)}
+        paragraph={imageGenParagraph}
+      />
+
+      <RadioDramaMode
+        open={radioParagraph != null}
+        onClose={() => setRadioParagraph(null)}
+        paragraph={radioParagraph}
       />
 
       <ReaderSettingsDrawer
