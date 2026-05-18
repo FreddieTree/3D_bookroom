@@ -52,18 +52,21 @@ export function LibraryGrid() {
       <nav className="font-sans mt-14 flex flex-col gap-2 border-t border-border pt-10 text-sm">
         <Link
           href="/"
+          prefetch
           className="rounded-xl px-3 py-3 text-foreground transition-colors hover:bg-muted"
         >
           返回首页书架
         </Link>
         <Link
           href="/settings"
+          prefetch
           className="rounded-xl px-3 py-3 text-foreground transition-colors hover:bg-muted"
         >
           设置
         </Link>
         <Link
           href="/install"
+          prefetch
           className="rounded-xl px-3 py-3 text-foreground transition-colors hover:bg-muted"
         >
           PWA 安装引导

@@ -13,6 +13,7 @@ import { GenerationWaiter } from "@/app/components/multimodal/GenerationWaiter";
 import { useAppStore } from "@/app/lib/stores/appStore";
 import type { Paragraph } from "@/app/lib/data/sample-content";
 import { cn } from "@/app/lib/utils";
+import { demoImageSkeletonMs } from "@/app/lib/env/demo";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
 
 type ImageGenerationProps = {
@@ -72,7 +73,7 @@ export function ImageGeneration({
       const pool = [...PALETTES].sort(() => Math.random() - 0.5).slice(0, 3);
       setCandidates(pool);
       setPhase("pick");
-    }, 520);
+    }, demoImageSkeletonMs(520));
   }, []);
 
   const pick = (c: (typeof candidates)[number]) => {

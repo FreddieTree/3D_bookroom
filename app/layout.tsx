@@ -6,6 +6,7 @@ import {
   Noto_Serif_SC,
 } from "next/font/google";
 
+import { AppChrome } from "@/app/components/providers/AppChrome";
 import { StoreHydration } from "@/app/components/providers/StoreHydration";
 import { ThemeApplier } from "@/app/components/theme/ThemeApplier";
 
@@ -38,12 +39,27 @@ const notoSerifSc = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: "三维书屋",
-  description: "AI 沉浸式阅读伴侣",
+  ...(process.env.VERCEL_URL
+    ? { metadataBase: new URL(`https://${process.env.VERCEL_URL}`) }
+    : {}),
+  applicationName: "三维书屋",
+  title: {
+    default: "三维书屋",
+    template: "%s · 三维书屋",
+  },
+  description: "AI 沉浸式阅读伴侣 — 活字体验",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "三维书屋",
+    statusBarStyle: "black-translucent",
+    title: "活字",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
   formatDetection: {
     telephone: false,
@@ -61,10 +77,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf6f0" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1611" },
-  ],
+  themeColor: "#b8763e",
 };
 
 export default function RootLayout({
@@ -77,10 +90,22 @@ export default function RootLayout({
       lang="zh-CN"
       className={`${inter.variable} ${lora.variable} ${notoSansSc.variable} ${notoSerifSc.variable} h-full`}
     >
+      <head>
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-1290x2796.png"
+          media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash-1179x2556.png"
+          media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)"
+        />
+      </head>
       <body className="min-h-dvh">
         <StoreHydration>
           <ThemeApplier />
-          {children}
+          <AppChrome>{children}</AppChrome>
         </StoreHydration>
       </body>
     </html>

@@ -3,6 +3,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
+import {
+  demoGenerationLineIntervalMs,
+  demoGenerationMinMs,
+} from "@/app/lib/env/demo";
+
 /**
  * TODO(成员3): 接入真实生成队列 / 进度；保留「过渡文案」插槽以无缝切换。
  */
@@ -22,6 +27,8 @@ export function GenerationWaiter({
 }: GenerationWaiterProps) {
   const [idx, setIdx] = useState(0);
   const onDoneRef = useRef(onDone);
+  const effectiveMin = demoGenerationMinMs(minMs);
+  const lineMs = demoGenerationLineIntervalMs(820);
 
   useLayoutEffect(() => {
     onDoneRef.current = onDone;
@@ -35,16 +42,16 @@ export function GenerationWaiter({
     queueMicrotask(() => setIdx(0));
     const advance = window.setInterval(() => {
       setIdx((i) => (i + 1 < lines.length ? i + 1 : i));
-    }, 820);
+    }, lineMs);
     const done = window.setTimeout(() => {
       window.clearInterval(advance);
       onDoneRef.current();
-    }, minMs);
+    }, effectiveMin);
     return () => {
       window.clearInterval(advance);
       window.clearTimeout(done);
     };
-  }, [open, lines, minMs]);
+  }, [open, lines, effectiveMin, lineMs]);
 
   if (!open) return null;
 

@@ -311,64 +311,84 @@ export const useAppStore = create<AppStoreState>()(
         }));
 
         void (async () => {
-          if (shouldDeferAsSpoiler(trimmed)) {
-            const pendingId = uid();
-            const pending: PendingQuestion = {
-              id: pendingId,
-              userQuestion: trimmed,
-              paragraphId: ctx.paragraphId,
-              revealAfterChapter: REVEAL_CHAPTER,
-            };
-            const aiMsg: ChatMessage = {
-              id: uid(),
-              role: "ai",
-              type: "spoiler-blocked",
-              content: spoilerQueueCopy(REVEAL_CHAPTER),
-              pendingId,
-              createdAt: Date.now(),
-            };
-            set((s) => ({
-              isAiTyping: false,
-              pendingQuestions: [...s.pendingQuestions, pending],
-              chatMessages: [...s.chatMessages, aiMsg],
-            }));
-            return;
-          }
-
-          const aiId = uid();
-          set((s) => ({
-            chatMessages: [
-              ...s.chatMessages,
-              {
-                id: aiId,
+          try {
+            if (shouldDeferAsSpoiler(trimmed)) {
+              const pendingId = uid();
+              const pending: PendingQuestion = {
+                id: pendingId,
+                userQuestion: trimmed,
+                paragraphId: ctx.paragraphId,
+                revealAfterChapter: REVEAL_CHAPTER,
+              };
+              const aiMsg: ChatMessage = {
+                id: uid(),
                 role: "ai",
-                type: "normal",
-                content: "",
+                type: "spoiler-blocked",
+                content: spoilerQueueCopy(REVEAL_CHAPTER),
+                pendingId,
                 createdAt: Date.now(),
-                isStreaming: true,
-              },
-            ],
-          }));
+              };
+              set((s) => ({
+                isAiTyping: false,
+                pendingQuestions: [...s.pendingQuestions, pending],
+                chatMessages: [...s.chatMessages, aiMsg],
+              }));
+              return;
+            }
 
-          let firstChunk = true;
-          await mockChatResponse(trimmed, ctx.paragraphId, (partial) => {
+            const aiId = uid();
             set((s) => ({
-              isAiTyping: firstChunk ? false : s.isAiTyping,
-              chatMessages: s.chatMessages.map((m) =>
-                m.id === aiId
-                  ? { ...m, content: partial, isStreaming: true }
-                  : m,
-              ),
+              chatMessages: [
+                ...s.chatMessages,
+                {
+                  id: aiId,
+                  role: "ai",
+                  type: "normal",
+                  content: "",
+                  createdAt: Date.now(),
+                  isStreaming: true,
+                },
+              ],
             }));
-            firstChunk = false;
-          });
 
-          set((s) => ({
-            chatMessages: s.chatMessages.map((m) =>
-              m.id === aiId ? { ...m, isStreaming: false } : m,
-            ),
-            isAiTyping: false,
-          }));
+            let firstChunk = true;
+            try {
+              await mockChatResponse(trimmed, ctx.paragraphId, (partial) => {
+                set((s) => ({
+                  isAiTyping: firstChunk ? false : s.isAiTyping,
+                  chatMessages: s.chatMessages.map((m) =>
+                    m.id === aiId
+                      ? { ...m, content: partial, isStreaming: true }
+                      : m,
+                  ),
+                }));
+                firstChunk = false;
+              });
+            } catch {
+              set((s) => ({
+                chatMessages: s.chatMessages.map((m) =>
+                  m.id === aiId
+                    ? {
+                        ...m,
+                        content: "回复暂时不可用，请检查网络后重试。",
+                        isStreaming: false,
+                      }
+                    : m,
+                ),
+                isAiTyping: false,
+              }));
+              return;
+            }
+
+            set((s) => ({
+              chatMessages: s.chatMessages.map((m) =>
+                m.id === aiId ? { ...m, isStreaming: false } : m,
+              ),
+              isAiTyping: false,
+            }));
+          } catch {
+            set({ isAiTyping: false });
+          }
         })();
       },
     }),

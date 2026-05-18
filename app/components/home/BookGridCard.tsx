@@ -16,6 +16,7 @@ export function BookGridCard({ book }: BookGridCardProps) {
   return (
     <Link
       href={`/book/${book.id}`}
+      prefetch
       onClick={() => setCurrentBookId(book.id)}
       className="block rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >

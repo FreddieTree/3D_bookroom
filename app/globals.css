@@ -163,6 +163,8 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans-stack);
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
   }
 }
 

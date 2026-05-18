@@ -56,7 +56,7 @@ function TokenRing({ pct }: { pct: number }) {
 
 function mockUpgrade(tier: string) {
   window.alert(
-    `升级至「${tier}」功能敬请期待。\n当前为评委演示环境，不接真实支付。`,
+    `升级至「${tier}」功能敬请期待。\n当前为演示环境，不接真实支付。`,
   );
 }
 
@@ -115,7 +115,11 @@ export function SettingsHub() {
 
   const [aboutOpen, setAboutOpen] = useState(false);
 
-  const usedPct = mockTokenUsage.monthlyUsed / mockTokenUsage.monthlyCap;
+  const cap = Math.max(0, mockTokenUsage.monthlyCap);
+  const usedPct =
+    cap > 0
+      ? Math.min(1, Math.max(0, mockTokenUsage.monthlyUsed / cap))
+      : 0;
 
   const setTheme = (theme: ReaderThemeMode) =>
     setReaderSettings({ theme });

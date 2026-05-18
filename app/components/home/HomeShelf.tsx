@@ -67,6 +67,7 @@ export function HomeShelf() {
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/"
+            prefetch
             className="min-w-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <span className="font-serif block text-[1.35rem] font-semibold leading-none tracking-tight text-foreground">
@@ -78,6 +79,7 @@ export function HomeShelf() {
           </Link>
           <Link
             href="/settings"
+            prefetch
             className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="设置"
           >
@@ -135,6 +137,7 @@ export function HomeShelf() {
             </h2>
             <Link
               href="/library"
+              prefetch
               className="font-sans shrink-0 text-sm font-medium text-primary hover:underline"
             >
               查看全部
@@ -213,6 +216,7 @@ function ContinueCard({
     >
       <Link
         href={`/book/${book.id}/read`}
+        prefetch
         onClick={onSelect}
         className="block rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >

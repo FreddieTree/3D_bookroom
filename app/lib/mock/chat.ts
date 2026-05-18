@@ -3,6 +3,8 @@
  * 替换为真实 AI 接口（SSE 或 WebSocket）。保留相同对外行为即可在无改动 UI 的情况下切换。
  */
 
+import { demoCharTickMs } from "@/app/lib/env/demo";
+
 export type ChatMessageType = "normal" | "spoiler-blocked" | "pending-release";
 
 export interface ChatMessage {
@@ -31,12 +33,20 @@ export function shouldDeferAsSpoiler(userText: string): boolean {
   return SPOILER_KEYS.some((k) => t.includes(k));
 }
 
-/** 逐字输出（20ms / 字） */
+/** 逐字输出（默 20ms/字；演示模式瞬时） */
 export function streamChars(
   fullText: string,
   onUpdate: (partial: string) => void,
 ): Promise<void> {
   return new Promise((resolve) => {
+    const delay = demoCharTickMs(20);
+    if (delay === 0) {
+      queueMicrotask(() => {
+        onUpdate(fullText);
+        resolve();
+      });
+      return;
+    }
     let i = 0;
     const tick = () => {
       i += 1;
@@ -45,13 +55,13 @@ export function streamChars(
         resolve();
         return;
       }
-      window.setTimeout(tick, 20);
+      window.setTimeout(tick, delay);
     };
     if (fullText.length === 0) {
       resolve();
       return;
     }
-    window.setTimeout(tick, 20);
+    window.setTimeout(tick, delay);
   });
 }
 
