@@ -14,6 +14,12 @@ import {
   type PendingQuestion,
 } from "@/app/lib/mock/chat";
 import type { MapFilterTab } from "@/app/lib/mock/map-data";
+import {
+  DEFAULT_MOCK_TOKEN,
+  DEFAULT_MOCK_USER,
+  type MockTokenUsage,
+  type MockUserProfile,
+} from "@/app/lib/mock/account-mock";
 
 export type ReaderThemeMode = "light" | "dark" | "system";
 
@@ -120,6 +126,17 @@ export type AppStoreState = {
   /** 阅读器 BGM 小条是否折叠 */
   readerBgmBarCollapsed: boolean;
   setReaderBgmBarCollapsed: (collapsed: boolean) => void;
+
+  /** 通知总开关（Mock） */
+  notificationsEnabled: boolean;
+  setNotificationsEnabled: (enabled: boolean) => void;
+
+  /** 演示用户与用量（商业模式验证） */
+  mockUser: MockUserProfile;
+  mockTokenUsage: MockTokenUsage;
+  setMockUser: (patch: Partial<MockUserProfile>) => void;
+  /** Mock 退出登录提示 */
+  mockSignOut: () => void;
 };
 
 const memoryStorage: StateStorage = {
@@ -150,6 +167,10 @@ export const useAppStore = create<AppStoreState>()(
 
       paragraphVisualsByBook: {},
       readerBgmBarCollapsed: false,
+
+      notificationsEnabled: true,
+      mockUser: { ...DEFAULT_MOCK_USER },
+      mockTokenUsage: { ...DEFAULT_MOCK_TOKEN },
 
       setCurrentBookId: (currentBookId) => set({ currentBookId }),
       setCurrentChapterIndex: (currentChapterIndex) =>
@@ -237,6 +258,20 @@ export const useAppStore = create<AppStoreState>()(
 
       setReaderBgmBarCollapsed: (readerBgmBarCollapsed) =>
         set({ readerBgmBarCollapsed }),
+
+      setNotificationsEnabled: (notificationsEnabled) =>
+        set({ notificationsEnabled }),
+
+      setMockUser: (patch) =>
+        set((s) => ({
+          mockUser: { ...s.mockUser, ...patch },
+        })),
+
+      mockSignOut: () => {
+        if (typeof window !== "undefined") {
+          window.alert("演示版：已结束本会话（数据仍保留在本地）。");
+        }
+      },
 
       releasePending: () => {
         const pending = get().pendingQuestions[0];
@@ -353,6 +388,9 @@ export const useAppStore = create<AppStoreState>()(
         mapSessionByBook: state.mapSessionByBook,
         paragraphVisualsByBook: state.paragraphVisualsByBook,
         readerBgmBarCollapsed: state.readerBgmBarCollapsed,
+        notificationsEnabled: state.notificationsEnabled,
+        mockUser: state.mockUser,
+        mockTokenUsage: state.mockTokenUsage,
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AppStoreState> | undefined;
@@ -381,6 +419,18 @@ export const useAppStore = create<AppStoreState>()(
           },
           readerBgmBarCollapsed:
             p?.readerBgmBarCollapsed ?? current.readerBgmBarCollapsed,
+          notificationsEnabled:
+            p?.notificationsEnabled ?? current.notificationsEnabled,
+          mockUser: {
+            ...DEFAULT_MOCK_USER,
+            ...(current.mockUser ?? {}),
+            ...(p?.mockUser ?? {}),
+          },
+          mockTokenUsage: {
+            ...DEFAULT_MOCK_TOKEN,
+            ...(current.mockTokenUsage ?? {}),
+            ...(p?.mockTokenUsage ?? {}),
+          },
           isChatOpen: false,
           isAiTyping: false,
         };
@@ -389,4 +439,4 @@ export const useAppStore = create<AppStoreState>()(
   ),
 );
 
-export type { ChatMessage, PendingQuestion };
+export type { ChatMessage, PendingQuestion, MockUserProfile, MockTokenUsage };
