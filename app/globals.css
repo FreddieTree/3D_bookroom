@@ -340,11 +340,22 @@
     @apply border-border;
   }
 
+  html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans-stack);
+    width: 100%;
+    max-width: 100%;
     min-height: 100dvh;
     min-height: -webkit-fill-available;
+    overflow-x: hidden;
   }
 }
 
@@ -573,6 +584,97 @@
       0 0 22px -6px color-mix(in oklch, var(--color-primary) 35%, transparent);
   }
 
+  /** 正文选区 · 半透明主题底 + 实色文字 */
+  .reader-selection-scope ::selection {
+    background-color: color-mix(
+      in oklch,
+      var(--color-primary) 42%,
+      transparent
+    );
+    color: var(--color-foreground);
+  }
+
+  /** 中英文混排：标点比例、英文字距、tabular 数字 */
+  .reader-mixed-prose {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.035em;
+    word-spacing: 0.052em;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    max-width: 100%;
+    font-feature-settings:
+      "kern" 1,
+      "palt" 1,
+      "pwid" 0;
+    font-family: var(--font-serif-stack);
+  }
+
+  .reader-chapter-pane pre,
+  .reader-chapter-pane code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  .reader-dropcap-first::first-letter {
+    float: left;
+    margin-top: 0.04em;
+    margin-right: 0.1em;
+    font-family: var(--font-serif-stack);
+    font-weight: 900;
+    line-height: 0.92;
+    color: var(--color-primary);
+    font-size: 3rem;
+    text-shadow:
+      0 1px 0 color-mix(in oklch, var(--color-primary) 16%, transparent);
+  }
+
+  @supports (-webkit-hyphens: none) {
+    .reader-dropcap-first::first-letter {
+      font-feature-settings:
+        "smcp" 0,
+        "onum" 1;
+      -webkit-hyphens: none;
+      hyphens: none;
+    }
+  }
+
+  .reader-paragraph-divider-line {
+    color: color-mix(in oklch, var(--color-primary) 45%, transparent);
+    font-style: normal;
+    letter-spacing: 0.5em;
+  }
+
+  .material-glass {
+    backdrop-filter: blur(18px);
+    background: color-mix(in oklch, var(--color-background) 72%, transparent);
+    box-shadow: var(--shadow-glass);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-border) 55%, transparent);
+  }
+
+  .material-glass-scroll {
+    backdrop-filter: blur(26px);
+  }
+
+  .material-glass-dark {
+    backdrop-filter: blur(22px);
+    background: color-mix(in oklch, var(--color-frame) 42%, transparent);
+    border-color: color-mix(in oklch, white 14%, transparent);
+    box-shadow: var(--shadow-ambient-3);
+  }
+
+  .reader-deep-vignette {
+    pointer-events: none;
+    background: radial-gradient(
+      farthest-corner,
+      transparent 54%,
+      oklch(0 0 0 / 0.33) 100%
+    );
+  }
+
   .reader-paper-shell {
     background-color: var(--color-background);
     background-image:
@@ -674,4 +776,27 @@
     transform: scale(1.22);
     opacity: 1;
   }
+}
+
+/*
+ * View Transitions（跨路由 morph 的根导航 + root 时长；具名元素的伪选择器只对固定 ident 生效，
+ * `book-cover-*` 等动态书名仍沿用浏览器默认具名过渡）。
+ */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(book-cover),
+::view-transition-new(book-cover) {
+  animation-duration: 0.6s;
+}
+
+::view-transition-image-pair(book-cover) {
+  isolation: isolate;
 }

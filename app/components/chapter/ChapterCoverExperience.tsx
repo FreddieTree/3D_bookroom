@@ -1,10 +1,11 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-
+import { AnimatedTitle } from "@/app/components/typography/AnimatedTitle";
 import { getChapterCoverMeta } from "@/app/lib/mock/chapter-cover";
+import { useViewTransitionNavigate } from "@/app/lib/hooks/useViewTransitionNavigate";
 import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
 import type { MockAmbientHandle } from "@/app/lib/audio/mock-ambient";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
@@ -21,7 +22,7 @@ export function ChapterCoverExperience({
   chapterIndex,
   chapterTitleFromDb = null,
 }: ChapterCoverExperienceProps) {
-  const router = useRouter();
+  const navigateVt = useViewTransitionNavigate();
   const meta = getChapterCoverMeta(bookId, chapterIndex, chapterTitleFromDb);
   const ambientRef = useRef<MockAmbientHandle | null>(null);
   const startedRef = useRef(false);
@@ -61,14 +62,18 @@ export function ChapterCoverExperience({
     safeVibrate(12);
     ambientRef.current?.stop();
     setLeaving(true);
-    window.setTimeout(() => {
-      router.push(
-        `/book/${bookId}/read?chapter=${chapterIndex}&fromCover=1`,
-      );
-    }, 480);
+    navigateVt(
+      `/book/${bookId}/read?chapter=${chapterIndex}&fromCover=1`,
+      { scroll: false },
+    );
   };
 
   const n = chapterIndex + 1;
+
+  const chapterHeadingVt: CSSProperties = {
+    viewTransitionName: `chapter-heading-${bookId}-${chapterIndex}`,
+    contain: "layout",
+  };
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[#060608] text-zinc-50">
@@ -94,14 +99,12 @@ export function ChapterCoverExperience({
         >
           {n.toString().padStart(2, "0")}
         </motion.p>
-        <motion.h1
+        <div
+          style={chapterHeadingVt}
           className="mt-10 text-center font-serif text-[1.35rem] font-semibold leading-snug text-zinc-200 sm:text-[1.5rem]"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: leaving ? 0 : 1, y: leaving ? -12 : 0 }}
-          transition={{ type: "spring", stiffness: 280, damping: 28, delay: 0.06 }}
         >
-          {meta.chapterTitle}
-        </motion.h1>
+          <AnimatedTitle text={meta.chapterTitle} />
+        </div>
         <motion.p
           className="mt-8 text-center font-serif text-[0.95rem] leading-relaxed text-zinc-400"
           initial={{ opacity: 0, y: 16 }}

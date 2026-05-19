@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 import { BookGridCard } from "@/app/components/home/BookGridCard";
 import { BOOKS } from "@/app/lib/data/books";
+import { useBooksCatalog } from "@/app/lib/hooks/useBooksCatalog";
 
 const listVariants = {
   hidden: { opacity: 0 },
@@ -24,6 +25,7 @@ const itemVariants = {
 };
 
 export function LibraryGrid() {
+  const books = useBooksCatalog(BOOKS);
   return (
     <main className="mx-auto flex w-full flex-1 flex-col pb-16 pt-4">
       <header className="mb-8 space-y-2">
@@ -32,7 +34,7 @@ export function LibraryGrid() {
         </p>
         <p className="font-serif text-2xl font-semibold text-foreground">完整书架</p>
         <p className="font-sans text-sm text-muted-foreground">
-          共 {BOOKS.length} 本藏书
+          共 {books.length} 本藏书
         </p>
       </header>
 
@@ -42,7 +44,7 @@ export function LibraryGrid() {
         animate="show"
         className="grid grid-cols-2 gap-4 sm:grid-cols-3"
       >
-        {BOOKS.map((book) => (
+        {books.map((book) => (
           <motion.li key={book.id} variants={itemVariants} layout>
             <BookGridCard book={book} />
           </motion.li>

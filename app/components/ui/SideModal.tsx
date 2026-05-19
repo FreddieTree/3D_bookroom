@@ -1,6 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion, PanInfo } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  type PanInfo,
+  type Transition,
+} from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
@@ -19,6 +24,7 @@ type SideModalProps = {
   children: ReactNode;
   panelClassName?: string;
   nestedLayout?: boolean;
+  transition?: Transition;
 };
 
 export function SideModal({
@@ -30,6 +36,7 @@ export function SideModal({
   children,
   panelClassName,
   nestedLayout = false,
+  transition,
 }: SideModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -134,12 +141,14 @@ export function SideModal({
                   : { left: 1, right: 0 }
             }
             onDragEnd={onDragEnd}
-            transition={{
-              type: "spring",
-              stiffness: 420,
-              damping: 36,
-              mass: 0.65,
-            }}
+            transition={
+              transition ?? {
+                type: "spring",
+                stiffness: 420,
+                damping: 36,
+                mass: 0.65,
+              }
+            }
           >
             {!customHeader && title ? (
               <header

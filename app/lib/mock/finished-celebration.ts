@@ -54,6 +54,19 @@ export const MOCK_GOOD_QUESTIONS: GoodQuestionCard[] = [
 /** 演示用阅读天数（与真实日历无关） */
 export const FINISHED_DEMO_DAYS = 5;
 
+/** 演示：对话段落 / 画卷（RollingNumber） */
+export const FINISHED_DEMO_DIALOGUES = 32;
+export const FINISHED_DEMO_IMAGES = 8;
+
+/** RollingNumber 展示的统计（与日历无关 demo） */
+export function getFinishedDemoStats(userDialogueTurns: number) {
+  return {
+    days: FINISHED_DEMO_DAYS,
+    dialogues: Math.max(userDialogueTurns, FINISHED_DEMO_DIALOGUES),
+    images: FINISHED_DEMO_IMAGES,
+  };
+}
+
 /** 与本地对话取 max，保证文案有表现力 */
 export function formatFinishedSubtitle(
   bookTitle: string,

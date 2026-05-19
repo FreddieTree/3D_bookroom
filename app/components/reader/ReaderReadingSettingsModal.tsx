@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 
 import { ReaderSettingsPanel } from "@/app/components/reader/ReaderSettingsPanel";
 import { SideModal } from "@/app/components/ui/SideModal";
+import { spring } from "@/app/lib/animations";
 import { useOverlayHistoryBinding } from "@/app/lib/hooks/useOverlayHistory";
 
 type ReaderReadingSettingsModalProps = {
@@ -26,6 +27,7 @@ export function ReaderReadingSettingsModal({
       open={open}
       onClose={onClose}
       side="right"
+      transition={spring.soft}
       panelClassName="max-h-[100dvh] w-[min(100vw,_24rem)] border-l border-border"
     >
       <div className="relative flex min-h-0 flex-1 flex-col">

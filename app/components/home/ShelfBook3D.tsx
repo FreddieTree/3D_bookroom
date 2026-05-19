@@ -12,20 +12,35 @@ import { cn } from "@/app/lib/utils";
 type ShelfBook3DProps = {
   book: BookMeta;
   index: number;
+  /** 正在「抽出」某一本书时，其余书退后虚化 */
+  shelfFocusPeerId: string | null;
+  /** 该书开始飞出动画的瞬间回调 */
+  onShelfPeerFocus?: (bookId: string) => void;
 };
 
-function ShelfBook3DInner({ book, index }: ShelfBook3DProps) {
+function ShelfBook3DInner({
+  book,
+  index,
+  shelfFocusPeerId,
+  onShelfPeerFocus,
+}: ShelfBook3DProps) {
   const { toBook } = useNavigation();
   const setActiveBookId = useReaderStore((s) => s.setActiveBookId);
   const [pulling, setPulling] = useState(false);
 
+  const othersRecess =
+    shelfFocusPeerId !== null && shelfFocusPeerId !== book.id;
+
   const go = () => {
+    onShelfPeerFocus?.(book.id);
     setPulling(true);
     window.setTimeout(() => {
       setActiveBookId(book.id);
       toBook(book.id);
-    }, 400);
+    }, 380);
   };
+
+  const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
   return (
     <motion.li
@@ -43,6 +58,12 @@ function ShelfBook3DInner({ book, index }: ShelfBook3DProps) {
         damping: 30,
         delay: index * 0.085,
       }}
+      animate={{
+        opacity: othersRecess ? 0.48 : 1,
+        scale: othersRecess ? 0.96 : pulling ? 1 : 1,
+        filter: othersRecess ? "blur(3px)" : "blur(0px)",
+      }}
+      style={{ transformStyle: "preserve-3d" }}
     >
       <motion.div
         className="perspective-mid w-full preserve-3d"
@@ -59,7 +80,7 @@ function ShelfBook3DInner({ book, index }: ShelfBook3DProps) {
                 translateZ: 0,
               }
         }
-        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.42, ease }}
         style={{ transformStyle: "preserve-3d" }}
       >
         <motion.button
@@ -99,6 +120,7 @@ function ShelfBook3DInner({ book, index }: ShelfBook3DProps) {
                   style={{ perspective: "900px" }}
                 >
                   <motion.div
+                    layoutId={`book-cover-${book.id}`}
                     className="relative flex h-full w-[78%] max-w-[7.75rem] items-center justify-center rounded-l-md rounded-r-sm text-[clamp(2.25rem,_9vw,_2.85rem)] shadow-[var(--shadow-elevation-2)] preserve-3d border-y border-r border-black/14"
                     style={{
                       rotateY: -10,
@@ -106,6 +128,7 @@ function ShelfBook3DInner({ book, index }: ShelfBook3DProps) {
                       background: book.coverColor,
                       boxShadow:
                         "-8px 0 18px -6px rgb(0 0 0 / 0.35), inset -3px 0 0 rgb(0 0 0 / 0.15)",
+                      viewTransitionName: `book-cover-${book.id}`,
                     }}
                   >
                     {book.coverEmoji ? (

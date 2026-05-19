@@ -1,21 +1,48 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { animate, motion, useMotionValue } from "framer-motion";
-import { Loader2, Mic } from "lucide-react";
+import { motion } from "framer-motion";
+import { Mic, Sparkles } from "lucide-react";
 
 import { cn } from "@/app/lib/utils";
-import { safeVibrate } from "@/app/lib/utils/vibrate";
+import { haptics, safeVibrate } from "@/app/lib/utils/vibrate";
 
 type ReaderFloatingMicProps = {
   processing: boolean;
+  deepFocusGhost?: boolean;
+  hasCompletedBubble?: boolean;
   onRoundBegin?: () => void;
   onCommitSend?: () => void;
   className?: string;
 };
 
+function MockVolumeBars({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-6 bottom-[1.125rem] top-9 z-[2] flex items-end justify-center gap-1">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <motion.div
+          key={i}
+          className="h-7 w-[3px] max-h-[74%] min-h-[38%] origin-bottom rounded-full bg-white/93"
+          animate={{
+            scaleY: [0.44, 0.98, 0.52, 0.86],
+          }}
+          transition={{
+            duration: 0.68 + i * 0.04,
+            repeat: Infinity,
+            ease: [0.22, 1, 0.36, 1],
+            delay: i * 0.09,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function ReaderFloatingMic({
   processing,
+  deepFocusGhost = false,
+  hasCompletedBubble = false,
   onRoundBegin,
   onCommitSend,
   className,
@@ -30,29 +57,8 @@ export function ReaderFloatingMic({
   const tickTimer = useRef<number | null>(null);
   const recordStartedAt = useRef<number | null>(null);
 
-  const scaleBreath = useMotionValue(1);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function breathe() {
-      while (!cancelled && !recording && !processing) {
-        await animate(scaleBreath, 1.05, {
-          duration: 1.5,
-          ease: "easeInOut",
-        });
-        await animate(scaleBreath, 1, {
-          duration: 1.5,
-          ease: "easeInOut",
-        });
-      }
-    }
-    if (!recording && !processing) {
-      void breathe();
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [recording, processing, scaleBreath]);
+  const idleBreath =
+    !recording && !processing && !deepFocusGhost;
 
   const clearHold = () => {
     if (holdTimer.current) {
@@ -71,7 +77,7 @@ export function ReaderFloatingMic({
   useEffect(() => () => stopTick(), []);
 
   const beginRecording = () => {
-    safeVibrate(15);
+    haptics.longPressStart();
     recordStartedAt.current = Date.now();
     setRecording(true);
     setCancelSwipe(false);
@@ -138,36 +144,43 @@ export function ReaderFloatingMic({
         </p>
       ) : null}
 
-      <div className="relative flex items-center justify-center">
-        {recording &&
-          [0, 1, 2].map((i) => (
-            <motion.span
-              key={i}
-              aria-hidden
-              className={cn(
-                "pointer-events-none absolute inline-block size-[4.25rem] rounded-full bg-destructive/35",
-              )}
-              initial={{ opacity: 0.55, scale: 1 }}
-              animate={{
-                opacity: [0.5, 0],
-                scale: [1, 2.08],
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 1.9,
-                delay: i * 0.43,
-                ease: "easeOut",
-              }}
-            />
-          ))}
+      <div className="relative flex size-[4.5rem] shrink-0 items-center justify-center">
+        {recording
+          ? [0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full border-2 border-red-500"
+                initial={{ scale: 1, opacity: 0.8 }}
+                animate={{ scale: 2.5, opacity: 0 }}
+                transition={{
+                  duration: 1.8,
+                  delay: i * 0.6,
+                  repeat: Infinity,
+                  ease: "easeOut",
+                }}
+              />
+            ))
+          : null}
+
+        <motion.span
+          className="pointer-events-none absolute inset-[-10px] rounded-full blur-xl"
+          style={{
+            background: recording
+              ? "radial-gradient(circle at 50% 50%, rgb(239 68 68 / 0.5), transparent 68%)"
+              : processing
+                ? "radial-gradient(circle at 50% 50%, rgb(234 179 8 / 0.42), transparent 68%)"
+                : "radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--color-primary) 48%, transparent), transparent 70%)",
+          }}
+          animate={{
+            opacity: recording || processing ? 0.94 : deepFocusGhost ? 0.28 : 0.76,
+          }}
+        />
+
         <motion.button
           type="button"
           aria-label={
-            processing
-              ? "处理中…"
-              : recording
-                ? "录音中，松开发送"
-                : "长按发问"
+            processing ? "处理中…" : recording ? "录音中，松开发送" : "长按发问"
           }
           disabled={processing}
           onPointerDown={onPointerDown}
@@ -175,27 +188,72 @@ export function ReaderFloatingMic({
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
           className={cn(
-            "pointer-events-auto relative grid size-[4.25rem] place-items-center rounded-full outline-none ring-1 ring-black/10 cursor-pointer",
-            processing &&
-              "bg-amber-500 text-white shadow-[0_0_28px_-6px_rgb(251_191_36_/_58%)] dark:bg-amber-600",
-            !processing &&
-              recording &&
-              "bg-destructive text-destructive-foreground shadow-[0_18px_40px_-10px_rgb(239_68_68_/_55%)]",
-            !processing &&
+            "pointer-events-auto relative z-[6] rounded-full outline-none ring-2 ring-transparent",
+            hasCompletedBubble &&
               !recording &&
-              "bg-primary text-primary-foreground shadow-[0_18px_40px_-10px_color-mix(in_oklch,var(--color-primary)_52%,transparent)]",
+              !processing &&
+              "ring-amber-400/68 dark:ring-amber-400/58",
           )}
+          animate={{
+            scale: idleBreath ? [1, 1.06, 1] : recording ? 1.15 : 1,
+          }}
+          transition={
+            idleBreath
+              ? { repeat: Infinity, duration: 4, ease: "easeInOut" }
+              : { type: "spring", stiffness: 440, damping: 32 }
+          }
           style={{
-            scale: recording ? 1.1 : processing ? 1 : scaleBreath,
+            opacity:
+              deepFocusGhost && !recording && !processing ? 0.45 : undefined,
+          }}
+          whileTap={{
+            scale: processing ? 1 : recording ? 1.06 : deepFocusGhost ? 0.95 : 0.97,
           }}
         >
-          {recording ? (
-            <Mic className="size-8 shrink-0" strokeWidth={2} />
-          ) : processing ? (
-            <Loader2 className="size-9 shrink-0 animate-spin" strokeWidth={1.85} />
-          ) : (
-            <Mic className="size-8 shrink-0" strokeWidth={2} />
-          )}
+          <span
+            className={cn(
+              "relative grid size-[4.5rem] place-items-center overflow-hidden rounded-full text-primary-foreground shadow-[var(--shadow-ambient-2)]",
+              recording &&
+                "bg-gradient-to-br from-red-500 via-red-600 to-orange-950",
+              processing &&
+                "bg-gradient-to-br from-amber-400 via-amber-700 to-orange-950",
+              !recording &&
+                !processing &&
+                "bg-gradient-to-br from-primary via-[color-mix(in_oklch,var(--color-primary)_88%,var(--color-background))] to-brand-600",
+            )}
+            style={{
+              boxShadow: "inset 0 2px 0 oklch(1 0 0 / 0.16)",
+            }}
+          >
+            <MockVolumeBars active={recording} />
+
+            <motion.span
+              className="relative z-[7] grid place-items-center text-white drop-shadow-[0_1px_2px_rgb(0_0_0_/_38%)]"
+              animate={{
+                rotate: processing ? [0, 360] : 0,
+              }}
+              transition={{
+                rotate: processing
+                  ? { duration: 4.8, repeat: Infinity, ease: "linear" }
+                  : {},
+              }}
+            >
+              {recording ? (
+                <motion.span
+                  animate={{
+                    opacity: [0.88, 1, 0.78],
+                  }}
+                  transition={{ repeat: Infinity, duration: 0.92 }}
+                >
+                  <Mic className="size-[1.875rem]" strokeWidth={2} aria-hidden />
+                </motion.span>
+              ) : processing ? (
+                <Sparkles className="size-[1.875rem]" strokeWidth={2} aria-hidden />
+              ) : (
+                <Mic className="size-[1.875rem]" strokeWidth={2} aria-hidden />
+              )}
+            </motion.span>
+          </span>
         </motion.button>
       </div>
     </div>

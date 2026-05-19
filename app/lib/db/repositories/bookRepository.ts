@@ -9,6 +9,14 @@ export async function getAllBooks() {
   return Book.find().sort({ createdAt: -1 }).lean().exec();
 }
 
+/** 首页 / 书店：仅上架且对读者公开的书。 */
+export async function listPublicReadyBooks() {
+  return Book.find({ status: "public", isReady: true })
+    .sort({ createdAt: -1 })
+    .lean()
+    .exec();
+}
+
 /** Fetch deterministic metadata keyed by slug id (`little-prince`). */
 export async function getBookById(bookId: string) {
   return Book.findOne({ bookId }).lean().exec();

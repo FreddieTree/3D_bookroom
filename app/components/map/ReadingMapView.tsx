@@ -29,6 +29,7 @@ import { fetchMergedBookChapters } from "@/app/lib/reader/fetch-merged-book-chap
 import { useAppStore } from "@/app/lib/stores/appStore";
 import { useReaderStore } from "@/app/lib/stores/readerStore";
 import { cn } from "@/app/lib/utils";
+import { ReadingMapTimeTower } from "@/app/components/map/ReadingMapTimeTower";
 import { computeReadProgressPercentFlexible } from "@/app/lib/utils/read-progress-percent";
 import { formatRelativeTimePast } from "@/app/lib/utils/relative-time";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
@@ -91,26 +92,6 @@ function nodeIcon(type: MapNode["type"]) {
     default:
       return null;
   }
-}
-
-function ThumbnailOrGradient({ node }: { node: MapNode }) {
-  if (node.type !== "image") return null;
-  if (node.payload.imageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- optional mock URL
-      <img
-        src={node.payload.imageUrl}
-        alt=""
-        className="mt-2 h-14 w-20 shrink-0 rounded-lg object-cover opacity-90"
-      />
-    );
-  }
-  return (
-    <div
-      className="mt-2 h-14 w-20 shrink-0 rounded-lg bg-gradient-to-br from-sky-500/25 via-primary/15 to-amber-500/20 ring-1 ring-white/10"
-      aria-hidden
-    />
-  );
 }
 
 type ReadingMapViewProps = {
@@ -261,6 +242,15 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
     longTriggered.current = false;
   };
 
+  const interruptTowerGestures = () => {
+    clearLong();
+    longTriggered.current = false;
+  };
+
+  const onTowerReleased = (node: MapNode) => {
+    onNodePointerUp(node);
+  };
+
   const pendingCount = stats.pendingWaiting + pendingQuestions.length;
 
   if (!book || baseNodes.length === 0) {
@@ -275,7 +265,12 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
           >
             <ChevronLeft className="size-6" strokeWidth={1.75} />
           </button>
-          <h1 className="text-sm font-semibold text-zinc-300">阅读地图</h1>
+          <h1
+            style={{ viewTransitionName: `reading-map-hub-${bookId}` }}
+            className="text-sm font-semibold text-zinc-300"
+          >
+            阅读地图
+          </h1>
         </header>
         <p className="mt-12 px-6 text-center text-sm text-zinc-500">
           《{book?.title ?? "本书"}》暂时没有可展示的阅读地图 demo 节点；
@@ -302,7 +297,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
         initial={{ opacity: 0, y: -18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 32 }}
-        className="sticky top-0 z-30 border-b border-white/[0.07] bg-[#0c0c0f]/90 backdrop-blur-md"
+        className="sticky top-0 z-30 border-b border-white/[0.085] bg-[color-mix(in_oklch,#0c0c0f_86%,transparent)] backdrop-blur-xl"
       >
         <div className="flex h-12 items-center gap-1 px-1">
           <button
@@ -313,7 +308,10 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
           >
             <ChevronLeft className="size-6" strokeWidth={1.75} />
           </button>
-          <h1 className="min-w-0 flex-1 truncate text-center text-[0.8rem] font-semibold tracking-tight text-zinc-100">
+          <h1
+            style={{ viewTransitionName: `reading-map-hub-${bookId}` }}
+            className="min-w-0 flex-1 truncate text-center text-[0.8rem] font-semibold tracking-tight text-zinc-100"
+          >
             {mapTitle}
           </h1>
           <button
@@ -329,17 +327,17 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
           </button>
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto px-3 pb-2.5 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="material-glass mx-3 mb-2 flex gap-1 overflow-x-auto rounded-2xl p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {FILTER_TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setMapSession(bookId, { filterTab: t.id })}
               className={cn(
-                "shrink-0 rounded-full px-3.5 py-1.5 text-[0.7rem] font-medium transition-colors",
+                "shrink-0 rounded-[0.92rem] px-4 py-2 text-[0.68rem] font-semibold transition-[background-color,color,transform]",
                 filterTab === t.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-white/[0.06] text-zinc-400 hover:bg-white/[0.1] hover:text-zinc-200",
+                  ? "scale-[1.02] bg-primary text-primary-foreground shadow-[0_10px_32px_-12px_color-mix(in_oklch,var(--primary)_68%,transparent)]"
+                  : "text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-200",
               )}
             >
               {t.label}
@@ -350,129 +348,38 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
 
       <motion.div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-28 pt-4"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-28 pt-2"
         style={{ willChange: "scroll-position" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.06, duration: 0.25 }}
       >
         <div className="relative mx-auto max-w-[430px]">
-          <div className="pointer-events-none absolute bottom-0 left-[24.5%] top-0 w-px bg-white/[0.09]" />
-
-          <motion.ul
-            className="relative z-[1] space-y-0"
-            variants={{
-              hidden: {},
-              show: {
-                transition: { staggerChildren: 0.042, delayChildren: 0.08 },
-              },
-            }}
-            initial="hidden"
-            animate="show"
-          >
-            {filtered.map((node, i) => {
-              const prevCh = i > 0 ? filtered[i - 1]!.chapterIndex : -1;
-              const showChHeader = node.chapterIndex !== prevCh;
-              const ch = chapters[node.chapterIndex];
-              const chTitle = ch?.title ?? `第 ${node.chapterIndex + 1} 章`;
-              const isUnread = node.chapterIndex > currentCh;
-              const isCurrentCh = node.chapterIndex === currentCh;
-              const isReadPast = node.chapterIndex < currentCh;
-
-              return (
-                <motion.li
-                  key={node.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 14 },
-                    show: {
-                      opacity: 1,
-                      y: 0,
-                      transition: { type: "spring", stiffness: 400, damping: 28 },
-                    },
-                  }}
-                  className="flex gap-2 pb-5"
-                >
-                  <div
-                    className={cn(
-                      "box-border w-[25%] shrink-0 border-r border-white/[0.07] pr-2 pt-0.5",
-                      isReadPast && "bg-emerald-950/20",
-                      isCurrentCh &&
-                        "bg-amber-500/[0.07] ring-1 ring-amber-500/40 ring-inset",
-                      isUnread && "opacity-[0.42] grayscale",
-                    )}
-                  >
-                    {showChHeader ? (
-                      <>
-                        <p className="text-[0.65rem] font-semibold leading-tight text-zinc-300">
-                          {chTitle}
-                        </p>
-                        <div className="mx-auto mt-2 h-1.5 w-1.5 rounded-full bg-white/25" />
-                      </>
-                    ) : (
-                      <div className="mx-auto min-h-[2.5rem] w-px flex-1 bg-gradient-to-b from-white/12 to-white/[0.02]" />
-                    )}
-                  </div>
-
-                  <div className="w-[75%] min-w-0 pl-1">
-                    <motion.button
-                      type="button"
-                      className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.035] px-3 py-2.5 text-left shadow-none outline-none transition-[border-color,background-color] hover:border-white/[0.12] hover:bg-white/[0.05]"
-                      whileTap={{ scale: 0.985 }}
-                      style={{ willChange: "transform" }}
-                      onPointerDown={() => onNodePointerDown(node)}
-                      onPointerUp={() => onNodePointerUp(node)}
-                      onPointerCancel={clearLong}
-                      onPointerLeave={() => {
-                        clearLong();
-                        longTriggered.current = false;
-                      }}
-                    >
-                      <div className="flex gap-2.5">
-                        {nodeIcon(node.type)}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[0.7rem] text-zinc-500 tabular-nums">
-                            {formatRelativeTimePast(node.timestamp, MAP_DEMO_NOW)}
-                          </p>
-                          {node.payload.title ? (
-                            <p className="mt-0.5 text-[0.85rem] font-semibold leading-snug text-zinc-100">
-                              {node.payload.title}
-                            </p>
-                          ) : null}
-                          {node.payload.characterName ? (
-                            <p className="mt-0.5 text-[0.72rem] font-medium text-emerald-300/90">
-                              {node.payload.characterName}
-                            </p>
-                          ) : null}
-                          {node.payload.preview ? (
-                            <p className="mt-1 line-clamp-2 text-[0.72rem] leading-relaxed text-zinc-400">
-                              {node.payload.preview}
-                            </p>
-                          ) : null}
-                          {node.type === "pending" &&
-                          node.payload.pendingQuestion ? (
-                            <p className="mt-1 text-[0.7rem] italic text-amber-200/80">
-                              「{node.payload.pendingQuestion.slice(0, 80)}
-                              {node.payload.pendingQuestion.length > 80
-                                ? "…"
-                                : ""}
-                              」
-                            </p>
-                          ) : null}
-                          <ThumbnailOrGradient node={node} />
-                        </div>
-                      </div>
-                    </motion.button>
-                  </div>
-                </motion.li>
-              );
-            })}
-          </motion.ul>
-
-          {filtered.length === 0 ? (
-            <p className="py-16 text-center text-sm text-zinc-500">
-              这一栏暂无节点
-            </p>
-          ) : null}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={filterTab}
+              initial={{ opacity: 0.28, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0.12, y: -6 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {filtered.length === 0 ? (
+                <p className="py-16 text-center text-sm text-zinc-500">
+                  这一栏暂无节点
+                </p>
+              ) : (
+                <ReadingMapTimeTower
+                  chapters={chapters}
+                  nodes={filtered}
+                  currentChapterIndex={currentCh}
+                  liveParagraphId={progress?.paragraphId ?? null}
+                  onNodePointerDown={onNodePointerDown}
+                  onTowerNodeReleased={onTowerReleased}
+                  onNodePointerInterrupt={interruptTowerGestures}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </motion.div>
 
@@ -515,7 +422,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 420, damping: 34 }}
-              className="fixed bottom-0 left-1/2 z-[70] w-full max-w-[430px] -translate-x-1/2 rounded-t-2xl border border-white/10 bg-[#121216] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.7)]"
+              className="material-glass-dark fixed bottom-0 left-1/2 z-[70] w-full max-w-[430px] -translate-x-1/2 rounded-t-[1.35rem] border border-white/12 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 text-zinc-100 shadow-[0_-28px_64px_-18px_rgba(0,0,0,0.68)] backdrop-blur-2xl"
             >
               <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15" />
               <div className="flex gap-3">

@@ -215,6 +215,20 @@
 
 ---
 
+## 尚未落地的 REST（审计 2026-05-19）
+
+以下内容需在合并成员 2/3 分支时补齐；在此前 UI 主要走 mock / 本地组件状态。
+
+| 期望路由 | 用途 |
+| --- | --- |
+| `POST /api/pending/release` | 悬念条目标记为已释放 |
+| `GET /api/books/[bookId]/spoiler-map`（或等价） | 导出最新剧透图谱供 RAG |
+| `POST /api/generations/image`（及 music / voice …） | 发起多模态任务并写 `generatedcontents` |
+
+详见 **`integration-guide.md`**（仓库根目录）。
+
+---
+
 ### 一键验证（本地）
 
 ```bash

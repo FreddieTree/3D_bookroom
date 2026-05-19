@@ -1,5 +1,7 @@
 import { BookChapterList } from "@/app/components/book/BookChapterList";
 import { BookCoverActions } from "@/app/components/book/BookCoverActions";
+import { BookCoverPageTitle } from "@/app/components/book/BookCoverPageTitle";
+import { BookCoverVtThumb } from "@/app/components/book/BookCoverVtThumb";
 import { DemoBookShortcuts } from "@/app/components/book/DemoBookShortcuts";
 import { MobileContainer } from "@/app/components/layout/MobileContainer";
 import { PageHeader } from "@/app/components/layout/PageHeader";
@@ -24,16 +26,13 @@ export default async function BookCoverPage({ params }: BookCoverPageProps) {
           {book ? (
             <>
               <div className="flex gap-4">
-                <div
-                  className="flex h-[5.5rem] w-[4.25rem] shrink-0 items-center justify-center rounded-xl border border-border text-3xl shadow-[var(--shadow-soft)]"
-                  style={{ background: book.coverColor }}
-                >
-                  {book.coverEmoji ?? null}
-                </div>
+                <BookCoverVtThumb
+                  bookId={bookId}
+                  coverColor={book.coverColor}
+                  coverEmoji={book.coverEmoji}
+                />
                 <div className="min-w-0 space-y-1">
-                  <h1 className="font-serif text-[1.65rem] font-semibold leading-tight text-foreground">
-                    {book.title}
-                  </h1>
+                  <BookCoverPageTitle bookId={bookId} title={book.title} />
                   <p className="font-sans text-sm text-muted-foreground">
                     {book.titleEn}
                   </p>

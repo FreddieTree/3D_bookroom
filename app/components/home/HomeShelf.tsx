@@ -10,10 +10,13 @@ import {
   useTransform,
 } from "framer-motion";
 
+import { AnimatedTitle } from "@/app/components/typography/AnimatedTitle";
 import { ContinueReadingCard } from "@/app/components/home/ContinueReadingCard";
 import { HomeCommunityTeaser } from "@/app/components/home/HomeCommunityTeaser";
 import { ShelfBook3D } from "@/app/components/home/ShelfBook3D";
+import type { BookMeta } from "@/app/lib/data/books";
 import { BOOKS, getHomepageShelfBooks } from "@/app/lib/data/books";
+import { useBooksCatalog } from "@/app/lib/hooks/useBooksCatalog";
 import { useNavigation } from "@/app/lib/hooks/useNavigation";
 import { effectiveReadingFraction } from "@/app/lib/utils/reading-progress";
 import { cn } from "@/app/lib/utils";
@@ -53,16 +56,35 @@ export function HomeShelf() {
   const progressByBook = useReaderStore((s) => s.progressByBook);
   const [scrolled, setScrolled] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
+  const [shelfFocusPeerId, setShelfFocusPeerId] = useState<string | null>(null);
 
   const shelfViewport = useRef<HTMLElement | null>(null);
+  const { scrollY } = useScroll();
+  const bgY = useTransform(scrollY, [0, 1400], [0, -100]);
+  const midY = useTransform(scrollY, [0, 1400], [0, -52]);
+  const frontY = useTransform(scrollY, [0, 1400], [0, -16]);
   const { scrollYProgress } = useScroll({
     target: shelfViewport,
     offset: ["start end", "end start"],
   });
   const shelfY = useTransform(scrollYProgress, [0, 1], [26, -22]);
 
+  const shelfBooks = useBooksCatalog(getHomepageShelfBooks());
+
+  const shelfChapterHintLabel = useMemo(
+    () => bookshelfChapterHint(shelfBooks),
+    [shelfBooks],
+  );
+
+  const catalogForProgress = useMemo(() => {
+    const byId = new Map<string, BookMeta>();
+    for (const b of BOOKS) byId.set(b.id, b);
+    for (const b of shelfBooks) byId.set(b.id, b);
+    return [...byId.values()];
+  }, [shelfBooks]);
+
   const continueBooks = useMemo(() => {
-    const enriched = BOOKS.map((book) => {
+    const enriched = catalogForProgress.map((book) => {
       const frac = effectiveReadingFraction(
         book,
         progressByBook[book.id],
@@ -71,9 +93,7 @@ export function HomeShelf() {
     }).filter(({ frac }) => frac > 0);
     enriched.sort((a, b) => b.frac - a.frac);
     return enriched;
-  }, [progressByBook]);
-
-  const shelfBooks = useMemo(() => getHomepageShelfBooks(), []);
+  }, [catalogForProgress, progressByBook]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 6);
@@ -89,6 +109,41 @@ export function HomeShelf() {
 
   return (
     <>
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+        aria-hidden
+      >
+        <motion.div
+          className="absolute inset-[-18%] opacity-[0.38]"
+          style={{
+            y: bgY,
+            background: `
+              radial-gradient(80% 60% at 50% -10%, color-mix(in oklch, var(--brand-200) 24%, transparent), transparent 56%),
+              radial-gradient(90% 72% at 12% 100%, color-mix(in oklch, var(--brand-400) 10%, transparent), transparent 58%),
+              linear-gradient(180deg, oklch(0.965 0.008 70) 0%, var(--background) 54%)
+            `,
+          }}
+        />
+        <motion.div
+          className="absolute inset-[-12%] opacity-[0.2]"
+          style={{
+            y: midY,
+            background: `repeating-linear-gradient(
+              -12deg,
+              color-mix(in oklch, var(--foreground) 1.35%, transparent) 0 1px,
+              transparent 1px 9px
+            )`,
+          }}
+        />
+        <motion.div
+          className="absolute inset-0 opacity-[0.15]"
+          style={{
+            y: frontY,
+            background: `linear-gradient(180deg, transparent 0%, oklch(0 0 0 / 0.12) 100%)`,
+          }}
+        />
+      </div>
+
       <header
         data-scrolled={scrolled || undefined}
         className={cn(
@@ -101,7 +156,7 @@ export function HomeShelf() {
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 pt-3">
-            <p className="font-serif text-[1.925rem] font-bold leading-none tracking-[0.01em] text-foreground">
+            <p className="font-serif text-3xl font-bold leading-none tracking-[0.01em] text-foreground">
               三维书屋
             </p>
             <p className="font-serif mt-2 text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:text-[0.68rem]">
@@ -123,19 +178,16 @@ export function HomeShelf() {
         variants={sectionReveal}
         initial="hidden"
         animate="show"
-        className="mx-auto flex w-full max-w-full flex-1 flex-col pb-20 pt-[1.375rem]"
+        className="mx-auto flex w-full max-w-full flex-1 flex-col pb-24 pt-4"
       >
         <motion.section
           variants={fadeUp}
-          className="mb-14 px-1"
+          className="mb-12 px-1"
           aria-label="问候"
         >
-          <motion.h1
-            className="font-serif text-[clamp(2.375rem,_6.5vw,_2.825rem)] font-semibold leading-[1.1] tracking-tight text-foreground"
-            layout
-          >
-            {greetingLabel()}
-          </motion.h1>
+          <h1 className="font-serif text-[clamp(2.375rem,_6.5vw,_2.825rem)] font-semibold leading-[1.1] tracking-tight text-foreground">
+            <AnimatedTitle text={greetingLabel()} />
+          </h1>
           <motion.p
             variants={fadeUp}
             className="font-serif mt-5 text-xl text-muted-foreground sm:text-[1.275rem]"
@@ -147,12 +199,21 @@ export function HomeShelf() {
         {continueBooks.length > 0 ? (
           <motion.section
             variants={fadeUp}
-            className="mb-16"
+            className="mb-12"
             aria-label="继续阅读"
           >
-            <h2 className="font-sans mb-4 px-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              继续阅读
-            </h2>
+            <div className="mb-4 flex items-baseline justify-between gap-4 px-1">
+              <h2 className="font-sans text-lg font-semibold text-foreground">
+                继续阅读
+              </h2>
+              <Link
+                href="/library"
+                prefetch
+                className="font-sans shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                查看全部
+              </Link>
+            </div>
             <div className="snap-x snap-mandatory -mx-6 flex gap-4 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {continueBooks.map(({ book, frac }, i) => (
                 <ContinueReadingCard
@@ -174,26 +235,40 @@ export function HomeShelf() {
           className="mb-16"
           aria-label="我的书屋"
         >
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-4 px-1">
-            <h2 className="font-serif text-[1.45rem] font-bold tracking-tight text-foreground">
-              我的书屋
-            </h2>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-4 px-1">
+            <div className="min-w-0 space-y-1">
+              <h2 className="font-serif text-lg font-semibold tracking-tight text-foreground md:text-xl">
+                我的书屋
+              </h2>
+              <p className="font-sans text-sm text-muted-foreground">
+                {shelfBooks.length} 本书
+                {shelfChapterHintLabel
+                  ? ` · ${shelfChapterHintLabel}`
+                  : null}
+              </p>
+            </div>
             <Link
               href="/library"
               prefetch
-              className="font-sans shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              className="font-sans shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               查看全部
             </Link>
           </div>
 
           <motion.div style={{ y: shelfY }} className="will-change-transform">
-            <div className="home-bookshelf-pane p-6 sm:p-7">
-              <ul className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">
+            <div className="home-bookshelf-pane p-4 sm:p-6">
+              <ul className="grid grid-cols-3 gap-3 sm:gap-4">
                 {shelfBooks.map((book, idx) => (
-                  <ShelfBook3D key={book.id} book={book} index={idx} />
+                  <ShelfBook3D
+                    key={book.id}
+                    book={book}
+                    index={idx}
+                    shelfFocusPeerId={shelfFocusPeerId}
+                    onShelfPeerFocus={(id) => setShelfFocusPeerId(id)}
+                  />
                 ))}
-                <li className="col-span-2 flex justify-center pt-6 sm:col-span-3 sm:pt-8">
+                <li className="col-span-3 flex justify-center pt-5 sm:pt-6">
                   <ShelfBook3DPlaceholder />
                 </li>
               </ul>
@@ -209,13 +284,13 @@ export function HomeShelf() {
           <button
             type="button"
             onClick={showToast}
-            className="font-serif w-full rounded-[1rem] bg-[color-mix(in_oklch,var(--surface-2)_90%,transparent)] px-6 py-[1.35rem] text-left shadow-[var(--shadow-elevation-1)] outline-none transition-[transform,box-shadow] hover:shadow-book active:translate-y-[1px]"
+            className="font-sans flex min-h-[6.25rem] w-full flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-border/80 bg-muted/25 px-6 py-6 text-center text-muted-foreground outline-none backdrop-blur-[1px] transition-[colors,transform] hover:border-primary/55 hover:bg-muted/40 active:translate-y-px"
           >
-            <span className="block text-xl font-bold text-foreground">
-              + 上传你的书
+            <span className="text-xl font-semibold text-foreground">
+              上传新书
             </span>
-            <span className="font-serif mt-2 block text-[0.9rem] text-muted-foreground">
-              支持 EPUB · TXT · PDF
+            <span className="text-sm leading-relaxed">
+              EPUB · TXT · PDF
             </span>
           </button>
         </motion.section>
@@ -237,6 +312,11 @@ export function HomeShelf() {
       </AnimatePresence>
     </>
   );
+}
+
+function bookshelfChapterHint(books: BookMeta[]): string | null {
+  const total = books.reduce((n, b) => n + (b.totalChapters ?? 0), 0);
+  return total > 0 ? `共 ${String(total)} 章` : null;
 }
 
 /** 占位加号格子，与三本展示形成「书架空位」感 */

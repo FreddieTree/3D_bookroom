@@ -14,6 +14,7 @@ import {
 
 import { VoiceRecorderOverlay } from "@/app/components/chat/VoiceRecorderOverlay";
 import { SideModal } from "@/app/components/ui/SideModal";
+import { spring } from "@/app/lib/animations";
 import { useOverlayHistoryBinding } from "@/app/lib/hooks/useOverlayHistory";
 import { MOCK_SUSPENSE_RELEASE_PREFIX } from "@/app/lib/mock/reading";
 import { cn } from "@/app/lib/utils";
@@ -145,6 +146,7 @@ export function ChatDrawer({
         open={open}
         onClose={closeChat}
         side="right"
+        transition={spring.soft}
         panelClassName="max-h-[100dvh] w-[min(100vw,_26rem)] border-l border-border shadow-[var(--shadow-elevation-3)]"
       >
         <div className="flex min-h-0 flex-1 flex-col">

@@ -11,17 +11,22 @@ const withPWA = withPWAInit({
   fallbacks: {
     document: "/~offline",
   },
+  /** 不在线时保留兜底页；不向所有失败导航全局注入离线 HTML，减少 iOS PWA 误判。 */
   workboxOptions: {
-    navigateFallback: "/~offline",
     navigateFallbackDenylist: [
       /^\/_next\/image/,
       /^\/api(?:\/|$)/,
       /^\/_next\/data/,
+      /^\/~offline$/,
+      /^\/offline$/,
     ],
   },
 });
 
 const nextConfig: NextConfig = {
+  experimental: {
+    viewTransition: true,
+  },
   // Service worker & Workbox rely on Webpack. Turbopack dev still runs; production build uses Webpack when needed.
 };
 

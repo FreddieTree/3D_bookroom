@@ -3,6 +3,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
 
+import { withViewTransition } from "@/app/lib/startViewTransition";
+
 /** Match `/book/:bookId[/read|map|finished|chapter/:n/cover]` */
 export function parseBookPath(pathname: string): {
   bookId: string;
@@ -35,47 +37,60 @@ export function useNavigation() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const vtPush = useCallback(
+    (href: string, scroll = true) => {
+      withViewTransition(() => {
+        router.push(href, { scroll });
+      });
+    },
+    [router],
+  );
+
   const toHome = useCallback(() => {
-    router.push("/");
-  }, [router]);
+    vtPush("/", true);
+  }, [vtPush]);
 
   const toBook = useCallback(
     (bookId: string) => {
-      router.push(`/book/${bookId}`);
+      vtPush(`/book/${bookId}`, true);
     },
-    [router],
+    [vtPush],
   );
 
   const toRead = useCallback(
     (bookId: string, opts?: { replace?: boolean }) => {
       const href = `/book/${bookId}/read`;
-      if (opts?.replace) router.replace(href, { scroll: false });
-      else router.push(href, { scroll: false });
+      if (opts?.replace) {
+        router.replace(href, { scroll: false });
+        return;
+      }
+      vtPush(href, false);
     },
-    [router],
+    [router, vtPush],
   );
 
   const toMap = useCallback(
     (bookId: string) => {
-      router.push(`/book/${bookId}/map`);
+      vtPush(`/book/${bookId}/map`, false);
     },
-    [router],
+    [vtPush],
   );
 
   const toFinished = useCallback(
-    (bookId: string) => {
-      router.push(`/book/${bookId}/finished`);
+    (bookId: string, opts?: { celebrate?: boolean }) => {
+      const q = opts?.celebrate ? "?celebrate=1" : "";
+      vtPush(`/book/${bookId}/finished${q}`, false);
     },
-    [router],
+    [vtPush],
   );
 
   const toSettings = useCallback(() => {
-    router.push("/settings");
-  }, [router]);
+    vtPush("/settings", true);
+  }, [vtPush]);
 
   const toLibrary = useCallback(() => {
-    router.push("/library");
-  }, [router]);
+    vtPush("/library", true);
+  }, [vtPush]);
 
   const back = useCallback(() => {
     const book = parseBookPath(pathname);
@@ -98,7 +113,7 @@ export function useNavigation() {
 
     switch (book.tail) {
       case "read":
-        router.push(`/book/${book.bookId}`);
+        vtPush(`/book/${book.bookId}`, false);
         return;
       case "map":
         router.replace(`/book/${book.bookId}/read`, { scroll: false });
@@ -107,9 +122,9 @@ export function useNavigation() {
         router.replace(`/book/${book.bookId}/read`, { scroll: false });
         return;
       default:
-        router.push("/");
+        vtPush("/", true);
     }
-  }, [pathname, router]);
+  }, [pathname, router, vtPush]);
 
   return {
     back,

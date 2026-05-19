@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { Card3D } from "@/app/components/ui/Card3D";
 import type { BookMeta } from "@/app/lib/data/books";
 import { useReaderStore } from "@/app/lib/stores/readerStore";
 import { cn } from "@/app/lib/utils";
+import { useViewTransitionNavigate } from "@/app/lib/hooks/useViewTransitionNavigate";
 
 type ContinueReadingCardProps = {
   book: BookMeta;
@@ -21,6 +21,7 @@ export function ContinueReadingCard({
   index,
 }: ContinueReadingCardProps) {
   const setActiveBookId = useReaderStore((s) => s.setActiveBookId);
+  const navigateVt = useViewTransitionNavigate();
   const p = Math.min(100, Math.max(0, Math.round(pct)));
 
   return (
@@ -35,12 +36,15 @@ export function ContinueReadingCard({
         ease: [0.22, 1, 0.36, 1],
       }}
     >
-      <Link
-        href={`/book/${book.id}/read`}
-        prefetch
-        onClick={() => setActiveBookId(book.id)}
+      <button
+        type="button"
+        onClick={() => {
+          setActiveBookId(book.id);
+          navigateVt(`/book/${book.id}/read`, { scroll: false });
+        }}
         className={cn(
-          "block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          "block w-full text-left",
+          "outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         )}
       >
         <motion.div
@@ -72,7 +76,10 @@ export function ContinueReadingCard({
                 >
                   <div
                     className="flex h-[7.25rem] w-[5.85rem] items-center justify-center rounded-l-md rounded-r-sm border-y border-r border-black/14 text-[2rem]"
-                    style={{ background: book.coverColor }}
+                    style={{
+                      background: book.coverColor,
+                      viewTransitionName: `book-cover-${book.id}`,
+                    }}
                   >
                     <span aria-hidden>{book.coverEmoji}</span>
                   </div>
@@ -97,7 +104,7 @@ export function ContinueReadingCard({
             </div>
           </Card3D>
         </motion.div>
-      </Link>
+      </button>
     </motion.div>
   );
 }

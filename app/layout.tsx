@@ -8,6 +8,7 @@ import {
 } from "next/font/google";
 
 import { AppChrome } from "@/app/components/providers/AppChrome";
+import { LenisProvider } from "@/app/components/providers/LenisProvider";
 import { StoreHydration } from "@/app/components/providers/StoreHydration";
 import { ThemeApplier } from "@/app/components/theme/ThemeApplier";
 
@@ -113,7 +114,9 @@ export default function RootLayout({
       <body className="min-h-dvh">
         <StoreHydration>
           <ThemeApplier />
-          <AppChrome>{children}</AppChrome>
+          <LenisProvider>
+            <AppChrome>{children}</AppChrome>
+          </LenisProvider>
         </StoreHydration>
       </body>
     </html>

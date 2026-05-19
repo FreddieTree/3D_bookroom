@@ -2,6 +2,7 @@
 
 import { SideModal } from "@/app/components/ui/SideModal";
 import { SettingsHub } from "@/app/components/settings/SettingsHub";
+import { spring } from "@/app/lib/animations";
 import { useOverlayHistoryBinding } from "@/app/lib/hooks/useOverlayHistory";
 import { useAppStore } from "@/app/lib/stores/appStore";
 
@@ -17,6 +18,7 @@ export function GlobalSettingsModal() {
       onClose={closeGlobalSettings}
       side="right"
       title="设置"
+      transition={spring.soft}
       panelClassName="max-h-dvh overflow-hidden pt-0"
     >
       <div className="px-5 pb-10 pt-1 sm:px-7">
