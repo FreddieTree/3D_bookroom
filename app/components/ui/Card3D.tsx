@@ -1,7 +1,7 @@
 "use client";
 
 import type { PointerEventHandler, ReactNode } from "react";
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/app/lib/utils";
@@ -22,7 +22,7 @@ export type Card3DProps = {
 };
 
 /** 书架 / 弹层等用的 3D 深度卡片：默认浅阴影，hover/touch 加深并微倾。 */
-export function Card3D({
+function Card3DInner({
   children,
   depth = 2,
   enableTilt = true,
@@ -103,3 +103,6 @@ export function Card3D({
     </div>
   );
 }
+
+export const Card3D = memo(Card3DInner);
+Card3D.displayName = "Card3D";

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import {
   Inter,
+  JetBrains_Mono,
   Lora,
   Noto_Sans_SC,
   Noto_Serif_SC,
@@ -14,13 +15,13 @@ import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sans",
   display: "swap",
 });
 
 const lora = Lora({
   subsets: ["latin"],
-  variable: "--font-lora",
+  variable: "--font-serif",
   display: "swap",
 });
 
@@ -31,10 +32,17 @@ const notoSansSc = Noto_Sans_SC({
   display: "swap",
 });
 
+/** 中文可变衬线 · 正文与首字下沉 */
 const notoSerifSc = Noto_Serif_SC({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-noto-serif-sc",
+  weight: ["400", "500", "600", "700", "900"],
+  variable: "--font-serif-zh",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -88,7 +96,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${inter.variable} ${lora.variable} ${notoSansSc.variable} ${notoSerifSc.variable} h-full`}
+      className={`${inter.variable} ${lora.variable} ${notoSansSc.variable} ${notoSerifSc.variable} ${jetbrainsMono.variable} h-full`}
     >
       <head>
         <link

@@ -16,8 +16,8 @@ import { ReaderVoiceBubbles } from "@/app/components/reader/ReaderVoiceBubbles";
 import { ReadingProgressBackgroundSync } from "@/app/components/reader/ReadingProgressBackgroundSync";
 import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
 import { getBookById } from "@/app/lib/data/books";
-import { getChaptersForBook } from "@/app/lib/data/sample-content";
-import type { Paragraph } from "@/app/lib/data/sample-content";
+import type { ChapterContent, Paragraph } from "@/app/lib/data/sample-content";
+import { fetchMergedBookChapters } from "@/app/lib/reader/fetch-merged-book-chapters";
 import { useNavigation } from "@/app/lib/hooks/useNavigation";
 import {
   demoDisplayChapterTitle,
@@ -32,7 +32,8 @@ import { useAppStore } from "@/app/lib/stores/appStore";
 import { useReaderStore } from "@/app/lib/stores/readerStore";
 
 const LONG_PRESS_MS = 500;
-const SCROLL_NAV_HIDE_AFTER = 100;
+const PAGER_NAV_HIDE_AFTER = 120;
+const CHAT_EDGE_PX_FROM_RIGHT = 56;
 const FONT_SIZE_OPTIONS = [14, 16, 18, 20, 22] as const;
 
 type ReaderShellProps = {
@@ -55,7 +56,28 @@ export function ReaderShell({
   fromCover = false,
 }: ReaderShellProps) {
   const book = getBookById(bookId);
-  const chapters = getChaptersForBook(bookId);
+
+  const [chapterPack, setChapterPack] = useState<{
+    bookId: string;
+    chapters: ChapterContent[];
+  } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void fetchMergedBookChapters(bookId).then((chs) => {
+      if (!alive) return;
+      setChapterPack({ bookId, chapters: chs });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [bookId]);
+
+  /** `null` = 本条 `bookId` 尚未拉回正文；或与当前 bookId 不一致（切换书目瞬间）。 */
+  const chapters =
+    chapterPack?.bookId === bookId ? chapterPack.chapters : null;
+
+  const chaptersList = chapters ?? [];
   const { back, toMap, toFinished } = useNavigation();
   const router = useRouter();
 
@@ -104,21 +126,22 @@ export function ReaderShell({
 
   const [pressingId, setPressingId] = useState<string | null>(null);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const pagerRef = useRef<HTMLDivElement>(null);
   const scrollPersistTimer = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
   const swipeGestureStart = useRef<{ x: number; y: number } | null>(null);
 
-  const lastScrollY = useRef(0);
+  const lastScrollLeft = useRef(0);
+  const lastPagerApproxIdxRef = useRef(0);
+
   const anchorDebounce = useRef<number | null>(null);
-  const ratiosRef = useRef(new Map<string, number>());
 
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pressStart = useRef<{ x: number; y: number } | null>(null);
 
-  const chapter = chapters?.[chapterIndex] ?? null;
-  const totalChapters = chapters?.length ?? 0;
+  const chapter = chaptersList[chapterIndex] ?? null;
+  const totalChapters = chaptersList.length;
 
   const scheduleAnchor = useCallback(
     (paraId: string) => {
@@ -143,7 +166,7 @@ export function ReaderShell({
   }, [bookId]);
 
   useEffect(() => {
-    if (!chapters?.length) return;
+    if (chapters === null || chapters.length === 0) return;
 
     const applyChapterFromStore = () => {
       const raw =
@@ -194,91 +217,76 @@ export function ReaderShell({
   }, [chapter, readerProgressSlice?.paragraphId, scrollProgressPct, chapterEndVisible]);
 
   useEffect(() => {
-    const el = scrollRef.current;
+    const el = pagerRef.current;
     if (!el || !chapter) return;
 
-    const runScroll = () => {
-      const y = el.scrollTop;
-      const dy = y - lastScrollY.current;
-      if (y < 32 || y < SCROLL_NAV_HIDE_AFTER) setHeaderVisible(true);
-      else if (y >= SCROLL_NAV_HIDE_AFTER && dy > 1) setHeaderVisible(false);
-      else if (dy < -2) setHeaderVisible(true);
+    const runPager = () => {
+      const x = el.scrollLeft;
+      const dx = x - lastScrollLeft.current;
+      const w = Math.max(1, el.clientWidth || 360);
 
-      lastScrollY.current = y;
+      if (x < 28 || x < PAGER_NAV_HIDE_AFTER) setHeaderVisible(true);
+      else if (x >= PAGER_NAV_HIDE_AFTER && dx > 2) setHeaderVisible(false);
+      else if (dx < -4) setHeaderVisible(true);
 
-      const maxScroll = Math.max(1, el.scrollHeight - el.clientHeight);
-      const scrollPct = Math.min(100, (y / maxScroll) * 100);
-      const nearChapterEndPx = maxScroll - y < 10;
-      if (nearChapterEndPx) setScrollProgressPct(100);
-      else setScrollProgressPct(scrollPct);
+      lastScrollLeft.current = x;
+
+      const pc = chapter.paragraphs.length;
+      const approxIdx =
+        pc > 0
+          ? Math.min(pc - 1, Math.max(0, Math.round(x / w)))
+          : 0;
+
+      const pid = pc > 0 ? chapter.paragraphs[approxIdx]?.id ?? null : null;
+      if (pid) scheduleAnchor(pid);
+
+      lastPagerApproxIdxRef.current = approxIdx;
+
+      const maxScroll = Math.max(1, el.scrollWidth - el.clientWidth);
+      let scrollPct: number;
+      if (maxScroll <= 8 && pc > 0) {
+        scrollPct = ((approxIdx + 1) / pc) * 100;
+      } else {
+        scrollPct = Math.min(100, (x / maxScroll) * 100);
+      }
+
+      const nearChapterEndPx = maxScroll - x < 48;
+      if (
+        nearChapterEndPx ||
+        (pc > 0 &&
+          approxIdx >= pc - 1 &&
+          x >= maxScroll - w * 0.35)
+      ) {
+        setScrollProgressPct(100);
+      } else {
+        setScrollProgressPct(scrollPct);
+      }
 
       const nearEnd =
-        maxScroll <= 48 || nearChapterEndPx || el.scrollHeight - y - el.clientHeight < 120;
+        pc > 0 &&
+        approxIdx >= pc - 1 &&
+        (maxScroll <= 8 || nearChapterEndPx || x >= maxScroll - 24);
+
       setChapterEndVisible(Boolean(nearEnd));
 
       if (scrollPersistTimer.current) clearTimeout(scrollPersistTimer.current);
       scrollPersistTimer.current = setTimeout(() => {
-        useReaderStore.getState().setScrollOffset(bookId, y);
-      }, 450);
+        useReaderStore.getState().setScrollOffset(bookId, Math.round(x));
+      }, 520);
     };
 
-    const throttled = throttle(runScroll, 100);
+    const throttled = throttle(runPager, 100);
 
     el.addEventListener("scroll", throttled, { passive: true });
-    runScroll();
+    queueMicrotask(() => queueMicrotask(runPager));
     return () => {
       if (scrollPersistTimer.current) clearTimeout(scrollPersistTimer.current);
       el.removeEventListener("scroll", throttled as EventListener);
     };
-  }, [bookId, chapter]);
+  }, [bookId, chapter, scheduleAnchor]);
 
   useEffect(() => {
-    const root = scrollRef.current;
-    if (!root || !chapter) return;
-
-    const ratios = ratiosRef.current;
-    ratios.clear();
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          const id = (e.target as HTMLElement).dataset.paragraphId;
-          if (!id) continue;
-          if (e.isIntersecting) ratios.set(id, e.intersectionRatio);
-          else ratios.delete(id);
-        }
-        let bestId: string | null = null;
-        let bestR = 0;
-        ratios.forEach((r, id) => {
-          if (!bestId || r > bestR) {
-            bestId = id;
-            bestR = r;
-          }
-        });
-        if (bestId) scheduleAnchor(bestId);
-      },
-      {
-        root,
-        rootMargin: "-20% 0px -32% 0px",
-        threshold: [0.06, 0.18, 0.35, 0.52, 0.72, 0.92],
-      },
-    );
-
-    const nodes = root.querySelectorAll<HTMLElement>("p[data-paragraph-id]");
-    nodes.forEach((n) => io.observe(n));
-
-    return () => {
-      io.disconnect();
-      ratios.clear();
-    };
-  }, [chapterIndex, chapter, scheduleAnchor]);
-
-  useEffect(() => {
-    ratiosRef.current.clear();
-  }, [chapterIndex]);
-
-  useEffect(() => {
-    if (!openParagraphId || !chapters?.length) return;
+    if (!openParagraphId || chapters === null || chapters.length === 0) return;
     const chIdx = chapters.findIndex((ch) =>
       ch.paragraphs.some((p) => p.id === openParagraphId),
     );
@@ -286,13 +294,22 @@ export function ReaderShell({
     queueMicrotask(() => {
       setChapterIndex(chIdx);
       setReadingAnchor(chIdx, openParagraphId);
-      ratiosRef.current.clear();
     });
     const t = window.setTimeout(() => {
-      document
-        .getElementById(openParagraphId)
-        ?.scrollIntoView({ block: "center" });
-    }, 160);
+      const el = pagerRef.current;
+      const target = chapters[chIdx]?.paragraphs.findIndex(
+        (p) => p.id === openParagraphId,
+      );
+      if (
+        el &&
+        chapters[chIdx]?.paragraphs.length &&
+        target != null &&
+        target >= 0
+      ) {
+        const w = Math.max(1, el.clientWidth || 360);
+        el.scrollTo({ left: target * w, behavior: "smooth" });
+      }
+    }, 200);
     router.replace(`/book/${bookId}/read`, { scroll: false });
     return () => window.clearTimeout(t);
   }, [
@@ -307,7 +324,8 @@ export function ReaderShell({
     if (
       openParagraphId != null ||
       openChapterIndex == null ||
-      !chapters?.length
+      chapters === null ||
+      chapters.length === 0
     )
       return;
     const idx = Math.min(Math.max(0, openChapterIndex), chapters.length - 1);
@@ -315,15 +333,13 @@ export function ReaderShell({
     queueMicrotask(() => {
       setChapterIndex(idx);
       setReadingAnchor(idx, firstId);
-      ratiosRef.current.clear();
     });
     const t = window.setTimeout(() => {
-      if (firstId) {
-        document
-          .getElementById(firstId)
-          ?.scrollIntoView({ block: "center" });
+      const el = pagerRef.current;
+      if (el && chapters[idx]?.paragraphs.length) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
       }
-    }, 140);
+    }, 160);
     router.replace(`/book/${bookId}/read`, { scroll: false });
     return () => window.clearTimeout(t);
   }, [
@@ -351,26 +367,46 @@ export function ReaderShell({
   }, [readingDisplayMode]);
 
   useEffect(() => {
-    if (!chapter) return;
-    const bookmark =
-      useReaderStore.getState().progressByBook[bookId]?.paragraphId;
+    if (!chapter || chapters === null) return;
+
+    const prog = useReaderStore.getState().progressByBook[bookId];
+    const sameChapter =
+      prog != null && prog.chapterIndex === chapterIndex;
+
+    const bookmark = sameChapter ? prog.paragraphId : null;
+
     const targetId =
-      bookmark && chapter.paragraphs.some((p) => p.id === bookmark)
+      bookmark &&
+      bookmark !== "" &&
+      chapter.paragraphs.some((p) => p.id === bookmark)
         ? bookmark
         : null;
 
     const t = window.setTimeout(() => {
-      if (targetId) {
-        document.getElementById(targetId)?.scrollIntoView({ block: "center" });
-      } else {
-        const y = useReaderStore.getState().progressByBook[bookId]?.scrollOffset;
-        if (y != null && y > 0 && scrollRef.current) {
-          scrollRef.current.scrollTop = y;
+      const el = pagerRef.current;
+      const w = Math.max(1, el?.clientWidth ?? window.innerWidth ?? 360);
+
+      const xStore = prog?.scrollOffset ?? 0;
+
+      if (el && targetId != null) {
+        const pi = chapter.paragraphs.findIndex((p) => p.id === targetId);
+        if (pi >= 0) {
+          el.scrollLeft = pi * w;
+          lastScrollLeft.current = el.scrollLeft;
+          lastPagerApproxIdxRef.current = pi;
+          return;
         }
       }
+
+      if (el && xStore > 0) {
+        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+        el.scrollLeft = Math.min(maxScroll, xStore);
+        lastScrollLeft.current = el.scrollLeft;
+      }
     }, 100);
+
     return () => window.clearTimeout(t);
-  }, [bookId, chapterIndex, chapter]);
+  }, [bookId, chapterIndex, chapter, chapters]);
 
   const clearPressTimer = () => {
     if (pressTimer.current) {
@@ -435,7 +471,11 @@ export function ReaderShell({
       const next = chapter.paragraphs[idx + 1];
       if (next) {
         scheduleAnchor(next.id);
-        document.getElementById(next.id)?.scrollIntoView({ block: "center" });
+        const el = pagerRef.current;
+        if (el) {
+          const w = Math.max(1, el.clientWidth || 360);
+          el.scrollTo({ left: (idx + 1) * w, behavior: "smooth" });
+        }
       } else if (chapterIndex === totalChapters - 1) {
         toFinished(bookId);
       }
@@ -490,11 +530,37 @@ export function ReaderShell({
     chapter?.title ?? "",
   );
 
-  if (!book || !chapters?.length) {
+  if (!book) {
+    return (
+      <div className="font-sans flex min-h-dvh flex-col items-center justify-center gap-4 px-8 text-center">
+        <p className="text-muted-foreground">未找到书目，请返回重试。</p>
+        <button
+          type="button"
+          onClick={() => back()}
+          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+        >
+          返回
+        </button>
+      </div>
+    );
+  }
+
+  if (chapters === null) {
+    return (
+      <div
+        className="font-sans flex min-h-dvh flex-col items-center justify-center gap-3 px-8 text-center"
+        style={{ filter: `brightness(${brightness})` }}
+      >
+        <p className="text-muted-foreground">正在加载正文与章节目录…</p>
+      </div>
+    );
+  }
+
+  if (chapters.length === 0) {
     return (
       <div className="font-sans flex min-h-dvh flex-col items-center justify-center gap-4 px-8 text-center">
         <p className="text-muted-foreground">
-          本书暂无内嵌试读文本，或尚未在书目中配置。
+          本书暂无内嵌试读文本，数据库中也尚未入库章节段落。
         </p>
         <button
           type="button"
@@ -531,12 +597,12 @@ export function ReaderShell({
         onReleasePending={() => releasePending()}
       />
 
-      {/* scroll + overlays below */}
+      {/* 横向分页：每段视为一页（AI / 进度 / 书签同段落 id 对齐）。 */}
       <div
-        ref={scrollRef}
         className={cn(
-          "flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto overscroll-contain pb-[calc(15rem+env(safe-area-inset-bottom))]",
-          readingDisplayMode === "immersive" && "pb-[min(42dvh,_18rem)] pt-10",
+          "flex min-h-0 flex-1 touch-pan-x flex-col overflow-hidden overscroll-x-contain pb-[calc(15rem+env(safe-area-inset-bottom))]",
+          readingDisplayMode === "immersive" &&
+            "pb-[min(42dvh,_18rem)] pt-10",
           readingDisplayMode === "standard" && "pt-[10rem]",
         )}
         onTouchStart={(e) => {
@@ -550,24 +616,26 @@ export function ReaderShell({
           if (!s) return;
           const te = e.changedTouches[0];
           if (!te) return;
+          const vw = typeof window !== "undefined" ? window.innerWidth : 412;
           const dx = te.clientX - s.x;
-          const dy = Math.abs(te.clientY - s.y);
+          const dyAbs = Math.abs(te.clientY - s.y);
           if (
             readingDisplayMode === "standard" &&
-            dx > 82 &&
-            dy < 74
+            s.x >= vw - CHAT_EDGE_PX_FROM_RIGHT &&
+            dx > 64 &&
+            dyAbs < 76
           ) {
             safeVibrate(6);
             openChat();
           }
         }}
       >
-        <div className={cn("perspective-mid preserve-3d mx-auto w-full max-w-[min(42rem,_100%)] pb-28")}>
+        <div className="perspective-mid preserve-3d mx-auto flex min-h-0 w-full max-w-[min(42rem,_100%)] flex-1 flex-col pb-28">
           <AnimatePresence mode="wait">
             <motion.article
               key={chapterIndex}
               className={cn(
-                "font-serif text-foreground preserve-3d px-6",
+                "font-serif text-foreground preserve-3d flex min-h-0 flex-1 flex-col",
               )}
               initial={{ opacity: 0.08, rotateY: -32, x: -10 }}
               animate={{ opacity: 1, rotateY: 0, x: 0 }}
@@ -579,42 +647,53 @@ export function ReaderShell({
                 transformOrigin: "center center",
               }}
             >
-              {chapter?.paragraphs.map((para) => {
-                const visuals =
-                  paragraphVisualsByBook[bookId]?.[para.id] ?? [];
-                return (
-                  <div key={para.id}>
-                    <ReaderParagraphBlock
-                      paragraph={para}
-                      pressingId={pressingId}
-                      menuParagraphId={menu?.paragraph.id ?? null}
-                      onPointerDown={(ev) => {
-                        if (ev.button !== 0) return;
-                        startPress(para, ev.clientX, ev.clientY);
-                      }}
-                      onPointerMove={(ev) =>
-                        moveDuringPress(ev.clientX, ev.clientY)
-                      }
-                      onPointerEnd={() => {
-                        clearPressTimer();
-                        setPressingId(null);
-                        pressStart.current = null;
-                      }}
-                    />
-                    <ParagraphVisualAlbum
-                      bookId={bookId}
-                      paragraphId={para.id}
-                      visuals={visuals}
-                      expanded={expandedAlbumFor === para.id}
-                      onToggleExpanded={() =>
-                        setExpandedAlbumFor((cur) =>
-                          cur === para.id ? null : para.id,
-                        )
-                      }
-                    />
-                  </div>
-                );
-              })}
+              <div
+                ref={pagerRef}
+                style={{ overscrollBehaviorX: "contain" }}
+                className="-mx-1 flex min-h-[calc(100dvh-13.5rem)] flex-1 snap-x snap-mandatory flex-row overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] md:min-h-[min(72vh,640px)] [&::-webkit-scrollbar]:hidden"
+              >
+                {(chapter ?? { paragraphs: [] }).paragraphs.map((para) => {
+                  const visuals =
+                    paragraphVisualsByBook[bookId]?.[para.id] ?? [];
+                  return (
+                    <section
+                      key={para.id}
+                      data-paragraph-slide={para.id}
+                      aria-label="阅读一页"
+                      className="flex min-h-0 min-w-[100%] shrink-0 snap-center flex-col justify-start overflow-y-auto px-6 pb-8"
+                    >
+                      <ReaderParagraphBlock
+                        paragraph={para}
+                        pressingId={pressingId}
+                        menuParagraphId={menu?.paragraph.id ?? null}
+                        onPointerDown={(ev) => {
+                          if (ev.button !== 0) return;
+                          startPress(para, ev.clientX, ev.clientY);
+                        }}
+                        onPointerMove={(ev) =>
+                          moveDuringPress(ev.clientX, ev.clientY)
+                        }
+                        onPointerEnd={() => {
+                          clearPressTimer();
+                          setPressingId(null);
+                          pressStart.current = null;
+                        }}
+                      />
+                      <ParagraphVisualAlbum
+                        bookId={bookId}
+                        paragraphId={para.id}
+                        visuals={visuals}
+                        expanded={expandedAlbumFor === para.id}
+                        onToggleExpanded={() =>
+                          setExpandedAlbumFor((cur) =>
+                            cur === para.id ? null : para.id,
+                          )
+                        }
+                      />
+                    </section>
+                  );
+                })}
+              </div>
             </motion.article>
           </AnimatePresence>
         </div>
@@ -625,7 +704,11 @@ export function ReaderShell({
               initial={{ opacity: 0, y: 26 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 18 }}
-              transition={{ type: "spring" as const, stiffness: 320, damping: 30 }}
+              transition={{
+                type: "spring" as const,
+                stiffness: 320,
+                damping: 30,
+              }}
               className="font-sans px-6 pb-[max(2rem,_env(safe-area-inset-bottom))] pt-4"
             >
               <motion.button
@@ -647,7 +730,11 @@ export function ReaderShell({
               initial={{ opacity: 0, y: 26 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 18 }}
-              transition={{ type: "spring" as const, stiffness: 320, damping: 30 }}
+              transition={{
+                type: "spring" as const,
+                stiffness: 320,
+                damping: 30,
+              }}
               className="font-sans px-6 pb-[max(2rem,_env(safe-area-inset-bottom))] pt-4"
             >
               <motion.button

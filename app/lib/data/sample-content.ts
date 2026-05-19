@@ -212,23 +212,34 @@ export function getTotalChapterCount(bookId: string): number {
   return ch?.length ?? 0;
 }
 
-export function computeReadProgressPercent(
-  bookId: string,
-  progress: { chapterIndex: number; paragraphId: string | null } | undefined,
+export function computeReadProgressPercentFromChapters(
+  chs: ChapterContent[],
+  progress:
+    | { chapterIndex: number; paragraphId: string | null }
+    | undefined
+    | null,
 ): number {
-  const chs = getChaptersForBook(bookId);
-  if (!chs || !progress) return 0;
+  if (!chs.length || !progress) return 0;
   let total = 0;
   let read = 0;
   for (let i = 0; i < chs.length; i++) {
-    const n = chs[i].paragraphs.length;
+    const n = chs[i]!.paragraphs.length;
     total += n;
     if (i < progress.chapterIndex) read += n;
     else if (i === progress.chapterIndex) {
-      const ix = chs[i].paragraphs.findIndex((p) => p.id === progress.paragraphId);
+      const ix = chs[i]!.paragraphs.findIndex((p) => p.id === progress.paragraphId);
       read += ix >= 0 ? ix + 1 : 0;
     }
   }
   if (total === 0) return 0;
   return Math.min(100, Math.round((read / total) * 100));
+}
+
+/** @deprecated Prefer `computeReadProgressPercentFlexible` — 仅能统计有 `sample-content` 的书。 */
+export function computeReadProgressPercent(
+  bookId: string,
+  progress: { chapterIndex: number; paragraphId: string | null } | undefined,
+): number {
+  const chs = getChaptersForBook(bookId);
+  return computeReadProgressPercentFromChapters(chs ?? [], progress);
 }

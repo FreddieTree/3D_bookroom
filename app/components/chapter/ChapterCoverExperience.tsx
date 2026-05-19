@@ -12,14 +12,17 @@ import { safeVibrate } from "@/app/lib/utils/vibrate";
 type ChapterCoverExperienceProps = {
   bookId: string;
   chapterIndex: number;
+  /** Mongo / RSC 已解析章节标题时使用，优先级高于演示 JSON。 */
+  chapterTitleFromDb?: string | null;
 };
 
 export function ChapterCoverExperience({
   bookId,
   chapterIndex,
+  chapterTitleFromDb = null,
 }: ChapterCoverExperienceProps) {
   const router = useRouter();
-  const meta = getChapterCoverMeta(bookId, chapterIndex);
+  const meta = getChapterCoverMeta(bookId, chapterIndex, chapterTitleFromDb);
   const ambientRef = useRef<MockAmbientHandle | null>(null);
   const startedRef = useRef(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
@@ -64,8 +67,6 @@ export function ChapterCoverExperience({
       );
     }, 480);
   };
-
-  if (!meta) return null;
 
   const n = chapterIndex + 1;
 

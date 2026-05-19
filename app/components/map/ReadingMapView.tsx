@@ -14,10 +14,8 @@ import {
 } from "lucide-react";
 
 import { getBookById } from "@/app/lib/data/books";
-import {
-  computeReadProgressPercent,
-  getChaptersForBook,
-} from "@/app/lib/data/sample-content";
+import type { ChapterContent } from "@/app/lib/data/sample-content";
+import { getChaptersForBook } from "@/app/lib/data/sample-content";
 import { useNavigation } from "@/app/lib/hooks/useNavigation";
 import {
   getLittlePrinceMapStats,
@@ -27,9 +25,11 @@ import {
   type MapFilterTab,
   type MapNode,
 } from "@/app/lib/mock/map-data";
+import { fetchMergedBookChapters } from "@/app/lib/reader/fetch-merged-book-chapters";
 import { useAppStore } from "@/app/lib/stores/appStore";
 import { useReaderStore } from "@/app/lib/stores/readerStore";
 import { cn } from "@/app/lib/utils";
+import { computeReadProgressPercentFlexible } from "@/app/lib/utils/read-progress-percent";
 import { formatRelativeTimePast } from "@/app/lib/utils/relative-time";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
 
@@ -131,7 +131,28 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
   );
 
   const book = getBookById(bookId);
-  const chapters = getChaptersForBook(bookId);
+
+  const [tocFromApi, setTocFromApi] = useState<ChapterContent[] | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let alive = true;
+    void fetchMergedBookChapters(bookId).then((rows) => {
+      if (!alive) return;
+      setTocFromApi(rows);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [bookId]);
+
+  const chapters = useMemo(() => {
+    if (tocFromApi === null) return getChaptersForBook(bookId) ?? [];
+    if (tocFromApi.length > 0) return tocFromApi;
+    return getChaptersForBook(bookId) ?? [];
+  }, [tocFromApi, bookId]);
+
   const readerProgressByBook = useReaderStore((s) => s.progressByBook);
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
   const mapSessionByBook = useAppStore((s) => s.mapSessionByBook);
@@ -145,7 +166,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
 
   const progress = readerProgressByBook[bookId];
   const readPct = useMemo(
-    () => computeReadProgressPercent(bookId, progress),
+    () => computeReadProgressPercentFlexible(bookId, progress),
     [bookId, progress],
   );
   const currentCh = progress?.chapterIndex ?? 0;
@@ -154,11 +175,15 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
   const stats = useMemo(() => getLittlePrinceMapStats(baseNodes), [baseNodes]);
 
   const liveCurrent: MapNode | null = useMemo(() => {
-    if (bookId !== "little-prince" || !progress?.paragraphId) return null;
+    const pid = progress?.paragraphId;
+    if (pid == null || pid === "") return null;
     return {
       id: "map-live-current",
-      paragraphId: progress.paragraphId,
-      chapterIndex: progress.chapterIndex,
+      paragraphId: pid,
+      chapterIndex:
+        typeof progress?.chapterIndex === "number"
+          ? progress.chapterIndex
+          : 0,
       type: "current",
       timestamp: MAP_DEMO_NOW,
       payload: {
@@ -166,7 +191,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
         preview: "你离开地图时仍会停在这里；点按回到正文。",
       },
     };
-  }, [bookId, progress]);
+  }, [progress]);
 
   const session = mapSessionByBook[bookId];
   const filterTab = session?.filterTab ?? "all";
@@ -238,7 +263,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
 
   const pendingCount = stats.pendingWaiting + pendingQuestions.length;
 
-  if (!book || bookId !== "little-prince" || !chapters?.length) {
+  if (!book || baseNodes.length === 0) {
     return (
       <div className="flex min-h-dvh flex-col bg-[#0c0c0f] px-5 pb-10 pt-4 text-zinc-100">
         <header className="flex items-center gap-2 py-2">
@@ -252,8 +277,11 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
           </button>
           <h1 className="text-sm font-semibold text-zinc-300">阅读地图</h1>
         </header>
-        <p className="mt-12 text-center text-sm text-zinc-500">
-          《{book?.title ?? "本书"}》地图尚在筹备，请先阅读已开放书目。
+        <p className="mt-12 px-6 text-center text-sm text-zinc-500">
+          《{book?.title ?? "本书"}》暂时没有可展示的阅读地图 demo 节点；
+          {chapters.length > 0
+            ? " 仍可正常阅读并按章节回溯。"
+            : " 可先连接数据库并完成章节入库。"}
         </p>
         <button
           type="button"

@@ -21,6 +21,13 @@ export interface BookMeta {
 export const SAMPLE_BOOK_DEDUPE_NOTE =
   "death-of-ivan-ilyich: 合并重复 epub（Толстой / Толстой 文件名变体）";
 
+/** 首页「我的书屋」固定展示三本（演示） */
+export const HOMEPAGE_SHELF_BOOK_IDS = [
+  "little-prince",
+  "nineteen-eighty-four",
+  "the-old-man-and-the-sea",
+] as const;
+
 export const BOOKS: BookMeta[] = [
   {
     id: "little-prince",
@@ -35,10 +42,38 @@ export const BOOKS: BookMeta[] = [
     totalChapters: 3,
     estimatedHours: 2,
     isReady: true,
-    progress: 0.28,
+    progress: 0.3,
     sourceFiles: [
       "小王子 (圣埃克苏佩里,Antoine de Saint-Exupery,马振骋) (z-library.sk, 1lib.sk, z-lib.sk).epub",
     ],
+  },
+  {
+    id: "nineteen-eighty-four",
+    title: "1984",
+    titleEn: "Nineteen Eighty-Four",
+    author: "乔治·奥威尔",
+    coverColor:
+      "color-mix(in oklch, oklch(from #2a3560 l c h) 38%, var(--color-background))",
+    coverEmoji: "👁️",
+    shortDesc: "监视、语言与新话：一页页逼近的寒意。书目为演示占位。",
+    totalChapters: 3,
+    estimatedHours: 8,
+    isReady: true,
+    progress: 0,
+  },
+  {
+    id: "the-old-man-and-the-sea",
+    title: "老人与海",
+    titleEn: "The Old Man and the Sea",
+    author: "欧内斯特·海明威",
+    coverColor:
+      "color-mix(in oklch, oklch(from #2f4f6f l c h) 42%, var(--surface-3))",
+    coverEmoji: "🐟",
+    shortDesc: "人与海的角力：疲惫、尊严与一句不肯认输的话。书目为演示占位。",
+    totalChapters: 1,
+    estimatedHours: 3,
+    isReady: true,
+    progress: 0.7,
   },
   {
     id: "aq-zhengzhuan",
@@ -96,4 +131,9 @@ export const BOOKS: BookMeta[] = [
 
 export function getBookById(id: string): BookMeta | undefined {
   return BOOKS.find((b) => b.id === id);
+}
+
+export function getHomepageShelfBooks(): BookMeta[] {
+  const set = new Set<string>(HOMEPAGE_SHELF_BOOK_IDS);
+  return BOOKS.filter((b) => set.has(b.id));
 }

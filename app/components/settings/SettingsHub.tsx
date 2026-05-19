@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { SUBSCRIPTION_PLANS } from "@/app/lib/mock/account-mock";
+import { APP_SEMVER_LABEL } from "@/app/lib/app-meta";
 import type { ReaderThemeMode } from "@/app/lib/stores/appStore";
 import { useAppStore } from "@/app/lib/stores/appStore";
 import { cn } from "@/app/lib/utils";
 
-const APP_VERSION = "0.1.0";
 
 const FONT_SIZES = [14, 16, 18, 20, 22] as const;
 
@@ -354,7 +354,7 @@ export function SettingsHub() {
               className="flex w-full items-center justify-between rounded-xl px-1 py-3 text-left font-sans text-sm text-foreground transition-colors hover:bg-muted/50"
             >
               <span>关于与版本</span>
-              <span className="text-xs text-muted-foreground">v{APP_VERSION}</span>
+              <span className="text-xs text-muted-foreground">v{APP_SEMVER_LABEL}</span>
             </button>
             <button
               type="button"
@@ -389,7 +389,7 @@ export function SettingsHub() {
             </h3>
             <p className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">
               当前版本{" "}
-              <span className="font-mono text-foreground">{APP_VERSION}</span>
+              <span className="font-mono text-foreground">{APP_SEMVER_LABEL}</span>
               。会员档位、额度与账号相关能力将在服务端就绪后自动同步，无需重装应用。
             </p>
             <button

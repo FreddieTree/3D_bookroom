@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react";
 
 import {
-  computeReadProgressPercent,
-  getChaptersForBook,
+  computeReadProgressPercentFromChapters,
 } from "@/app/lib/data/sample-content";
 import { DEFAULT_DEMO_USER_ID } from "@/app/lib/db/constants";
+import { resolveChaptersForProgress } from "@/app/lib/utils/read-progress-percent";
 import { useReaderStore } from "@/app/lib/stores/readerStore";
 
 const DEBOUNCE_MS = Number(
@@ -32,12 +32,12 @@ export function ReadingProgressBackgroundSync({
 
     const ch = progress?.chapterIndex;
     const p = progress?.paragraphId;
-    /** 尚无正文样本的书（仅有 DB 占位）跳过，避免无谓 404 spam */
-    if (p == null || ch == null || !getChaptersForBook(bookId)) return;
+    const chapters = resolveChaptersForProgress(bookId, null);
+    if (!chapters?.length || p == null || ch == null) return;
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      const percent = computeReadProgressPercent(bookId, {
+      const percent = computeReadProgressPercentFromChapters(chapters, {
         chapterIndex: ch,
         paragraphId: p,
       });
@@ -63,17 +63,19 @@ export function ReadingProgressBackgroundSync({
 
   useEffect(() => {
     if (!syncEnabled() || typeof window === "undefined") return;
-    if (!getChaptersForBook(bookId)) return;
 
     const flushBeacon = () => {
       const now = performance.now();
       if (now - lastBeaconMs.current < 3500) return;
       lastBeaconMs.current = now;
 
+      const chapters = resolveChaptersForProgress(bookId, null);
+      if (!chapters?.length) return;
+
       const snap = useReaderStore.getState().progressByBook[bookId];
       if (!snap?.paragraphId) return;
 
-      const percent = computeReadProgressPercent(bookId, snap);
+      const percent = computeReadProgressPercentFromChapters(chapters, snap);
       const payload = JSON.stringify({
         userId: DEFAULT_DEMO_USER_ID,
         bookId,

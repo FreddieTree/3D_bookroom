@@ -1,23 +1,23 @@
 import Link from "next/link";
 
-import { getChaptersForBook } from "@/app/lib/data/sample-content";
+import { loadMergedChaptersForBook } from "@/app/lib/db/loadMergedChaptersForBook";
 
 type BookChapterListProps = {
   bookId: string;
 };
 
-/** 书籍详情页：章节目录（从本地样例内容生成，接入正文 API 后可替换数据源）。 */
-export function BookChapterList({ bookId }: BookChapterListProps) {
-  const chapters = getChaptersForBook(bookId);
+/** 书籍详情页：章节目录（Mongo 优先，离线时回落演示 JSON）。 */
+export async function BookChapterList({ bookId }: BookChapterListProps) {
+  const chapters = await loadMergedChaptersForBook(bookId);
 
-  if (!chapters?.length) {
+  if (!chapters.length) {
     return (
       <section className="mt-8" aria-label="章节目录">
         <h2 className="font-sans mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
           章节目录
         </h2>
         <p className="font-sans rounded-2xl border border-border/60 bg-muted/15 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-          本书目录整理中。可先点击下方「开始阅读」进入已开放章节。
+          本书暂无已入库章节。可先连接数据库并执行入库流程，或通过「开始阅读」查看是否有试读占位。
         </p>
       </section>
     );
@@ -30,7 +30,7 @@ export function BookChapterList({ bookId }: BookChapterListProps) {
       </h2>
       <ol className="space-y-2">
         {chapters.map((ch, i) => (
-          <li key={ch.index}>
+          <li key={`${bookId}-${ch.index}`}>
             <Link
               href={`/book/${bookId}/read?chapter=${i}`}
               prefetch

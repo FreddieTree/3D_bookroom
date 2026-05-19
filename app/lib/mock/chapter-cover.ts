@@ -1,5 +1,6 @@
 /**
- * 章节封面文案与 BGM 标题（Mock）。正文仍以 `sample-content` 为准。
+ * 章节封面文案与 BGM 标题。
+ * —— 数据源可为 DB（传 `resolvedChapterTitle`）、或演示 `sample-content`。
  */
 
 import { getChaptersForBook } from "@/app/lib/data/sample-content";
@@ -19,24 +20,34 @@ const LITTLE_PRINCE_BGM = [
 export function getChapterCoverMeta(
   bookId: string,
   chapterIndex: number,
-): { tagline: string; bgmTitle: string; chapterTitle: string } | null {
-  const chs = getChaptersForBook(bookId);
-  if (!chs || chapterIndex < 0 || chapterIndex >= chs.length) return null;
-  if (bookId === "little-prince") {
+  resolvedChapterTitle?: string | null,
+): { tagline: string; bgmTitle: string; chapterTitle: string } {
+  const demoChapters = getChaptersForBook(bookId);
+  const demoChapter = demoChapters?.[chapterIndex];
+
+  const chapterTitle =
+    (resolvedChapterTitle && resolvedChapterTitle.trim()) ||
+    demoChapter?.title?.trim() ||
+    `第 ${chapterIndex + 1} 章`;
+
+  const useLittlePrinceDressing =
+    bookId === "little-prince" && Boolean(demoChapter);
+
+  if (useLittlePrinceDressing && demoChapter) {
     return {
-      chapterTitle: chs[chapterIndex]!.title,
+      chapterTitle,
       tagline:
         LITTLE_PRINCE_TAGLINES[
           Math.min(chapterIndex, LITTLE_PRINCE_TAGLINES.length - 1)
         ] ?? "",
       bgmTitle:
-        LITTLE_PRINCE_BGM[
-          Math.min(chapterIndex, LITTLE_PRINCE_BGM.length - 1)
-        ] ?? "环境氛围",
+        LITTLE_PRINCE_BGM[Math.min(chapterIndex, LITTLE_PRINCE_BGM.length - 1)] ??
+        "环境氛围",
     };
   }
+
   return {
-    chapterTitle: chs[chapterIndex]!.title,
+    chapterTitle,
     tagline: "本章即将开始，准备好进入阅读。",
     bgmTitle: "章节氛围音乐",
   };

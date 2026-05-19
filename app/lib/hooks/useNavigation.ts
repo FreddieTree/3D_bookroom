@@ -3,8 +3,6 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-import { useAppStore } from "@/app/lib/stores/appStore";
-
 /** Match `/book/:bookId[/read|map|finished|chapter/:n/cover]` */
 export function parseBookPath(pathname: string): {
   bookId: string;
@@ -72,8 +70,8 @@ export function useNavigation() {
   );
 
   const toSettings = useCallback(() => {
-    useAppStore.getState().openGlobalSettings();
-  }, []);
+    router.push("/settings");
+  }, [router]);
 
   const toLibrary = useCallback(() => {
     router.push("/library");

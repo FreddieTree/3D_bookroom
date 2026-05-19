@@ -26,7 +26,7 @@ export type MockTokenUsage = {
 export const DEFAULT_MOCK_USER: MockUserProfile = {
   nickname: "读者",
   avatarEmoji: "📚",
-  membershipLine: "Reader 会员 · 还剩 23 天",
+  membershipLine: "三维书屋会员 · Free",
   /** 订阅卡片展示为 Free（当前），与个人区礼遇文案分离（演示） */
   tier: "free",
 };
