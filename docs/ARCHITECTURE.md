@@ -13,7 +13,8 @@ Client (fetch)
                     → MongoDB Atlas（database = MONGODB_DB）
 ```
 
-- **Seed**：`npm run db:seed` → 直接调用 `connectDB()` 与 mongoose models。
+- **Seed**：`npm run db:seed` → `catalog-seed` 将 `BOOKS[]` 全量书目 + 「小王子」富文本章节写入 Atlas；占位书目仅 scaffolding 一章。
+- **Verify**：`npm run db:verify`（或聚合 `npm run db:test`）对照 `BOOKS[]`/`sample-content` 检查章节数、段落和、孤立章节告警。
 - **错误策略**：任一环节抛错将由 `databaseErrorResponse` 转成 `500 DATABASE_UNAVAILABLE`。
 
 ## Collection 拓扑
@@ -45,17 +46,20 @@ Client (fetch)
 
 1. Atlas 必须把运行 IP（或 `0.0.0.0/0` 临时）写入 Network Allowlist；
 2. 凭据仅存 `.env.local`，若泄露需在 Atlas Rotate password；
-3. UI 暂不读 API —— Phase B 可把 `fetchBooksFromApi()` 并入 Zustand / SWR；
+3. UI 默认 mock；可把 `NEXT_PUBLIC_USE_REAL_DB` 打开后以 `fetchBooksFromApi()` 等方式对接；
+4. **`ReadingProgressBackgroundSync`**（仅在 `NEXT_PUBLIC_BACKGROUND_PROGRESS_SYNC === "true"`）对拥有 `sample-content` 的书籍做 debounced `/api/progress` 回写，`pagehide/sendBeacon` 确保 PWA 切后台也不丢光标。
 
 ## Repo 目录快照
 
 ```
 app/lib/db/
-├── mongodb.ts              # connectDB()
-├── seed.ts                 # Atlas demo import
-├── http.ts                 # 统一 500 payload
-├── models/                 # 13 份 schema
-├── repositories/           # 数据访问门面
+├── mongodb.ts
+├── seed.ts                 # orchestrator → catalog-seed
+├── seed/catalog-seed.ts      # wipes + ingest BOOKS catalogue
+├── verify-catalog.ts       # referential coherence checks
+├── http.ts                 # unified 500 payload
+├── models/                 # schemas
+├── repositories/           # data access layer
 ```
 
 ## 相关文档

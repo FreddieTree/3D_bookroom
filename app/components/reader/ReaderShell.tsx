@@ -14,6 +14,7 @@ import { RadioDramaMode } from "@/app/components/multimodal/RadioDramaMode";
 import { ReaderBgmStrip } from "@/app/components/reader/ReaderBgmStrip";
 import { ImmersiveReadChrome } from "@/app/components/reader/ImmersiveReadChrome";
 import { ReaderSettingsDrawer } from "@/app/components/reader/ReaderSettingsDrawer";
+import { ReadingProgressBackgroundSync } from "@/app/components/reader/ReadingProgressBackgroundSync";
 import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
 import { cn } from "@/app/lib/utils";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
@@ -405,6 +406,7 @@ export function ReaderShell({
         willChange: "filter",
       }}
     >
+      <ReadingProgressBackgroundSync bookId={bookId} />
       <motion.header
         className="font-sans absolute left-0 right-0 top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md"
         initial={false}

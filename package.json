@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "icons": "node scripts/generate-pwa-icons.mjs",
-    "db:seed": "tsx app/lib/db/seed.ts"
+    "db:seed": "tsx app/lib/db/seed.ts",
+    "db:verify": "tsx app/lib/db/verify-catalog.ts",
+    "db:test": "npm run db:seed && npm run db:verify && npm run build"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

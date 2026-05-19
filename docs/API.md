@@ -9,8 +9,15 @@
 | `MONGODB_URI` | Atlas 或其他 Mongo 连接字符串（仅存 `.env.local`） |
 | `MONGODB_DB` | 数据库名（默认 `bookroom`） |
 | `NEXT_PUBLIC_USE_REAL_DB` | `"true"` 时允许前端 adapters 读取 `/api/*` |
+| `NEXT_PUBLIC_BACKGROUND_PROGRESS_SYNC` | `"true"` 时阅读器防抖 + sendBeacon（仅 `sample-content` 有正文的书），避免刷屏 |
+| `NEXT_PUBLIC_PROGRESS_SYNC_DEBOUNCE_MS` | 防抖毫秒数（默认 9000） |
 
-共性错误：`500`  
+### UX 优先级说明
+
+| 路由 | 行为 |
+| --- | --- |
+| `POST /api/chat` | MiniMax stub **先响应**；会话写入延后到 [`after()`](https://nextjs.org/docs/app/api-reference/functions/after)，降低首包耗时。 |
+  
 
 ```json
 {
