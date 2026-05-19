@@ -1,6 +1,6 @@
-# 三维书屋
+# 三维书屋 · 3D Bookroom
 
-AI-powered reading companion · OYSS × MiniMax Hackathon 2026
+AI 沉浸式阅读伴侣 · OYSS × MiniMax Hackathon 2026
 
 ## 项目简介
 

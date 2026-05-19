@@ -48,3 +48,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local sample EPUBs (keep out of repo; may be copyrighted or very large)
+sample_book/**/*.epub

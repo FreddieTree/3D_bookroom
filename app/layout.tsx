@@ -47,12 +47,12 @@ export const metadata: Metadata = {
     default: "三维书屋",
     template: "%s · 三维书屋",
   },
-  description: "AI 沉浸式阅读伴侣 — 活字体验",
+  description: "三维书屋 · 3D Bookroom · AI 沉浸式阅读伴侣",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "活字",
+    title: "三维书屋",
   },
   icons: {
     icon: [
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "三维书屋",
-    description: "AI 沉浸式阅读伴侣",
+    description: "三维书屋 · 3D Bookroom · AI 沉浸式阅读伴侣",
     type: "website",
   },
 };

@@ -23,6 +23,23 @@
   --shadow-soft: 0 12px 40px -18px
     color-mix(in oklch, oklch(from #3d342b l c h) 28%, transparent);
 
+  /* Surfaces · 纸本 / 木香层次（亮色） */
+  --surface-1: #faf6f0;
+  --surface-2: #f2ebd9;
+  --surface-3: #e8ddc0;
+  --surface-4: #c9b896;
+  --surface-5: #8b7355;
+
+  --shadow-elevation-1: 0 1px 2px rgba(139, 115, 85, 0.08);
+  --shadow-elevation-2: 0 2px 8px rgba(139, 115, 85, 0.12),
+    0 1px 2px rgba(139, 115, 85, 0.06);
+  --shadow-elevation-3: 0 8px 24px rgba(139, 115, 85, 0.15),
+    0 2px 6px rgba(139, 115, 85, 0.08);
+  --shadow-elevation-4: 0 16px 40px rgba(139, 115, 85, 0.18),
+    0 4px 12px rgba(139, 115, 85, 0.1);
+  --shadow-book: 0 12px 28px -8px rgba(139, 115, 85, 0.4),
+    0 4px 8px -2px rgba(139, 115, 85, 0.2);
+
   --font-serif-stack: var(--font-lora), var(--font-noto-serif-sc), ui-serif, serif;
   --font-sans-stack: var(--font-inter), var(--font-noto-sans-sc), ui-sans-serif,
     system-ui, sans-serif;
@@ -66,6 +83,23 @@
 
     --shadow-soft: 0 14px 48px -20px
       color-mix(in oklch, black 55%, oklch(from #b8763e l c h) 8%);
+
+    /* Surfaces · 暗色木纹层次 */
+    --surface-1: #2a251e;
+    --surface-2: #353028;
+    --surface-3: #433a2f;
+    --surface-4: #584a3e;
+    --surface-5: #7d6c58;
+
+    --shadow-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.45);
+    --shadow-elevation-2:
+      0 3px 10px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-elevation-3:
+      0 12px 32px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.28);
+    --shadow-elevation-4:
+      0 20px 52px rgba(0, 0, 0, 0.55), 0 8px 20px rgba(0, 0, 0, 0.32);
+    --shadow-book:
+      0 18px 40px -8px rgba(0, 0, 0, 0.6), 0 6px 14px rgba(139, 115, 85, 0.12);
   }
 }
 
@@ -106,6 +140,22 @@
 
   --shadow-soft: 0 14px 48px -20px
     color-mix(in oklch, black 55%, oklch(from #b8763e l c h) 8%);
+
+  --surface-1: #2a251e;
+  --surface-2: #353028;
+  --surface-3: #433a2f;
+  --surface-4: #584a3e;
+  --surface-5: #7d6c58;
+
+  --shadow-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-elevation-2:
+    0 3px 10px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-elevation-3:
+    0 12px 32px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.28);
+  --shadow-elevation-4:
+    0 20px 52px rgba(0, 0, 0, 0.55), 0 8px 20px rgba(0, 0, 0, 0.32);
+  --shadow-book:
+    0 18px 40px -8px rgba(0, 0, 0, 0.6), 0 6px 14px rgba(139, 115, 85, 0.12);
 }
 
 :root.theme-light {
@@ -129,6 +179,22 @@
 
   --shadow-soft: 0 12px 40px -18px
     color-mix(in oklch, oklch(from #3d342b l c h) 28%, transparent);
+
+  --surface-1: #faf6f0;
+  --surface-2: #f2ebd9;
+  --surface-3: #e8ddc0;
+  --surface-4: #c9b896;
+  --surface-5: #8b7355;
+
+  --shadow-elevation-1: 0 1px 2px rgba(139, 115, 85, 0.08);
+  --shadow-elevation-2: 0 2px 8px rgba(139, 115, 85, 0.12),
+    0 1px 2px rgba(139, 115, 85, 0.06);
+  --shadow-elevation-3: 0 8px 24px rgba(139, 115, 85, 0.15),
+    0 2px 6px rgba(139, 115, 85, 0.08);
+  --shadow-elevation-4: 0 16px 40px rgba(139, 115, 85, 0.18),
+    0 4px 12px rgba(139, 115, 85, 0.1);
+  --shadow-book: 0 12px 28px -8px rgba(139, 115, 85, 0.4),
+    0 4px 8px -2px rgba(139, 115, 85, 0.2);
 }
 
 @theme inline {
@@ -145,6 +211,12 @@
   --color-frame: var(--frame);
   --color-border: var(--border);
   --color-ring: var(--ring);
+
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
 
   --shadow-soft: var(--shadow-soft);
 
@@ -169,6 +241,83 @@
 }
 
 @layer utilities {
+  .study-room-gutter {
+    background-color: var(--color-frame);
+    background-image:
+      radial-gradient(
+        ellipse 90% 65% at 50% -25%,
+        color-mix(in oklch, var(--color-primary) 22%, transparent),
+        transparent 58%
+      ),
+      repeating-linear-gradient(
+        92deg,
+        transparent 0 6px,
+        color-mix(in oklch, black 18%, transparent) 6px 7px,
+        transparent 7px 26px,
+        color-mix(in oklch, black 10%, transparent) 26px 27px,
+        transparent 27px 54px
+      ),
+      linear-gradient(175deg, #12100c 0%, #1c1812 38%, #14110d 100%);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not(.theme-light) .study-room-gutter {
+      background-image:
+        radial-gradient(
+          ellipse 95% 55% at 50% -18%,
+          color-mix(in oklch, var(--color-primary) 18%, transparent),
+          transparent 55%
+        ),
+        repeating-linear-gradient(
+          92deg,
+          transparent 0 8px,
+          color-mix(in oklch, black 42%, transparent) 8px 9px,
+          transparent 9px 32px,
+          color-mix(in oklch, black 28%, transparent) 32px 33px,
+          transparent 33px 60px
+        ),
+        linear-gradient(172deg, #0b0a08 0%, #16120e 52%, #0c0b09 100%);
+    }
+  }
+
+  :root.theme-dark .study-room-gutter {
+    background-image:
+      radial-gradient(
+        ellipse 95% 55% at 50% -18%,
+        color-mix(in oklch, var(--color-primary) 18%, transparent),
+        transparent 55%
+      ),
+      repeating-linear-gradient(
+        92deg,
+        transparent 0 8px,
+        color-mix(in oklch, black 42%, transparent) 8px 9px,
+        transparent 9px 32px,
+        color-mix(in oklch, black 28%, transparent) 32px 33px,
+        transparent 33px 60px
+      ),
+      linear-gradient(172deg, #0b0a08 0%, #16120e 52%, #0c0b09 100%);
+  }
+
+  .shadow-book {
+    box-shadow: var(--shadow-book);
+  }
+
+  .perspective-near {
+    perspective: 800px;
+  }
+  .perspective-mid {
+    perspective: 1200px;
+  }
+  .perspective-far {
+    perspective: 2000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
   .reader-paragraph-highlight {
     background-color: color-mix(in oklch, var(--color-primary) 14%, transparent);
     box-decoration-break: clone;
