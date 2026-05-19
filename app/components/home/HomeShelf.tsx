@@ -9,6 +9,7 @@ import { BookGridCard } from "@/app/components/home/BookGridCard";
 import { cn } from "@/app/lib/utils";
 import { BOOKS, type BookMeta } from "@/app/lib/data/books";
 import { useAppStore } from "@/app/lib/stores/appStore";
+import { useReaderStore } from "@/app/lib/stores/readerStore";
 
 function greetingLabel(): string {
   const h = new Date().getHours();
@@ -35,7 +36,8 @@ const itemVariants = {
 };
 
 export function HomeShelf() {
-  const setCurrentBookId = useAppStore((s) => s.setCurrentBookId);
+  const setActiveBookId = useReaderStore((s) => s.setActiveBookId);
+  const openGlobalSettings = useAppStore((s) => s.openGlobalSettings);
   const [scrolled, setScrolled] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
 
@@ -77,14 +79,14 @@ export function HomeShelf() {
               沉浸式阅读伴侣
             </span>
           </Link>
-          <Link
-            href="/settings"
-            prefetch
+          <button
+            type="button"
             className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="设置"
+            onClick={() => openGlobalSettings()}
           >
             <Settings className="size-[1.25rem]" strokeWidth={1.75} />
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -123,7 +125,7 @@ export function HomeShelf() {
                   key={book.id}
                   book={book}
                   index={i}
-                  onSelect={() => setCurrentBookId(book.id)}
+                  onSelect={() => setActiveBookId(book.id)}
                 />
               ))}
             </div>

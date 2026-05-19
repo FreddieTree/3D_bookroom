@@ -19,6 +19,7 @@ import {
   persistDirectorModeFromSearch,
 } from "@/app/lib/env/demo";
 import { useAppStore } from "@/app/lib/stores/appStore";
+import { useReaderStore } from "@/app/lib/stores/readerStore";
 
 const DEFAULT_BOOK = "little-prince";
 
@@ -28,7 +29,7 @@ export function DirectorDock() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(false);
 
-  const currentBookId = useAppStore((s) => s.currentBookId);
+  const currentBookId = useReaderStore((s) => s.activeBookId);
   const openChat = useAppStore((s) => s.openChat);
   const releasePending = useAppStore((s) => s.releasePending);
 

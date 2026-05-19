@@ -9,6 +9,7 @@ import { ExternalLink, Share, Smartphone } from "lucide-react";
 
 import { MobileContainer } from "@/app/components/layout/MobileContainer";
 import { cn } from "@/app/lib/utils";
+import { useAppStore } from "@/app/lib/stores/appStore";
 
 function isStandalone(): boolean {
   if (typeof window === "undefined") return false;
@@ -26,6 +27,7 @@ function isWeChat(): boolean {
 
 export function InstallGuide() {
   const router = useRouter();
+  const openGlobalSettings = useAppStore((s) => s.openGlobalSettings);
   const [weChat] = useState(() => isWeChat());
   const [installCelebration, setInstallCelebration] = useState<
     "idle" | "progress" | "done"
@@ -156,13 +158,13 @@ export function InstallGuide() {
           >
             先逛逛首页
           </Link>
-          <Link
-            href="/settings"
-            prefetch
-            className="font-sans flex h-12 items-center justify-center rounded-2xl border border-border text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          <button
+            type="button"
+            className="font-sans flex h-12 w-full items-center justify-center rounded-2xl border border-border text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            onClick={() => openGlobalSettings()}
           >
             设置
-          </Link>
+          </button>
         </nav>
       </main>
 

@@ -1,16 +1,44 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-/**
- * Centralized client-side navigation for the app shell (no tab bar — per-page headers).
- */
+import { useAppStore } from "@/app/lib/stores/appStore";
+
+/** Match `/book/:bookId[/read|map|finished|chapter/:n/cover]` */
+export function parseBookPath(pathname: string): {
+  bookId: string;
+  tail:
+    | "cover"
+    | "read"
+    | "map"
+    | "finished"
+    | { kind: "chapter-cover"; chapterIndex: number };
+} | null {
+  const mChapter = pathname.match(/^\/book\/([^/]+)\/chapter\/(\d+)\/cover$/);
+  if (mChapter) {
+    return {
+      bookId: mChapter[1],
+      tail: {
+        kind: "chapter-cover",
+        chapterIndex: Number.parseInt(mChapter[2], 10),
+      },
+    };
+  }
+  const m = pathname.match(/^\/book\/([^/]+)(?:\/(read|map|finished))?$/);
+  if (!m) return null;
+  const bookId = m[1];
+  const leaf = m[2];
+  if (!leaf) return { bookId, tail: "cover" };
+  return { bookId, tail: leaf as "read" | "map" | "finished" };
+}
+
 export function useNavigation() {
   const router = useRouter();
+  const pathname = usePathname();
 
-  const back = useCallback(() => {
-    router.back();
+  const toHome = useCallback(() => {
+    router.push("/");
   }, [router]);
 
   const toBook = useCallback(
@@ -21,8 +49,10 @@ export function useNavigation() {
   );
 
   const toRead = useCallback(
-    (bookId: string) => {
-      router.push(`/book/${bookId}/read`);
+    (bookId: string, opts?: { replace?: boolean }) => {
+      const href = `/book/${bookId}/read`;
+      if (opts?.replace) router.replace(href, { scroll: false });
+      else router.push(href, { scroll: false });
     },
     [router],
   );
@@ -42,15 +72,50 @@ export function useNavigation() {
   );
 
   const toSettings = useCallback(() => {
-    router.push("/settings");
-  }, [router]);
+    useAppStore.getState().openGlobalSettings();
+  }, []);
 
   const toLibrary = useCallback(() => {
     router.push("/library");
   }, [router]);
 
+  const back = useCallback(() => {
+    const book = parseBookPath(pathname);
+    if (!book) {
+      if (pathname === "/" || pathname === "") {
+        if (typeof window !== "undefined") window.history.back();
+        return;
+      }
+      router.back();
+      return;
+    }
+
+    if (typeof book.tail === "object" && book.tail.kind === "chapter-cover") {
+      router.replace(
+        `/book/${book.bookId}/read?chapter=${String(book.tail.chapterIndex)}`,
+        { scroll: false },
+      );
+      return;
+    }
+
+    switch (book.tail) {
+      case "read":
+        router.push(`/book/${book.bookId}`);
+        return;
+      case "map":
+        router.replace(`/book/${book.bookId}/read`, { scroll: false });
+        return;
+      case "finished":
+        router.replace(`/book/${book.bookId}/read`, { scroll: false });
+        return;
+      default:
+        router.push("/");
+    }
+  }, [pathname, router]);
+
   return {
     back,
+    toHome,
     toBook,
     toRead,
     toMap,

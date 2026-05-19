@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 import {
   Bookmark,
   ChevronLeft,
@@ -29,6 +28,7 @@ import {
   type MapNode,
 } from "@/app/lib/mock/map-data";
 import { useAppStore } from "@/app/lib/stores/appStore";
+import { useReaderStore } from "@/app/lib/stores/readerStore";
 import { cn } from "@/app/lib/utils";
 import { formatRelativeTimePast } from "@/app/lib/utils/relative-time";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
@@ -118,18 +118,21 @@ type ReadingMapViewProps = {
 };
 
 export function ReadingMapView({ bookId }: ReadingMapViewProps) {
-  const router = useRouter();
   const { back, toRead } = useNavigation();
-  const toReadParagraph = useCallback(
-    (paragraphId: string) => {
-      router.push(`/book/${bookId}/read?p=${encodeURIComponent(paragraphId)}`);
+  const jumpToParagraph = useCallback(
+    (paragraphId: string, chapterIndex: number) => {
+      useReaderStore.getState().setReadingPosition(bookId, {
+        chapterIndex,
+        paragraphId,
+      });
+      toRead(bookId);
     },
-    [bookId, router],
+    [bookId, toRead],
   );
 
   const book = getBookById(bookId);
   const chapters = getChaptersForBook(bookId);
-  const readerProgressByBook = useAppStore((s) => s.readerProgressByBook);
+  const readerProgressByBook = useReaderStore((s) => s.progressByBook);
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
   const mapSessionByBook = useAppStore((s) => s.mapSessionByBook);
   const setMapSession = useAppStore((s) => s.setMapSession);
@@ -228,7 +231,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
     clearLong();
     if (!longTriggered.current) {
       safeVibrate(8);
-      toReadParagraph(node.paragraphId);
+      jumpToParagraph(node.paragraphId, node.chapterIndex);
     }
     longTriggered.current = false;
   };
@@ -533,7 +536,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
                 type="button"
                 onClick={() => {
                   setDetail(null);
-                  toReadParagraph(detail.paragraphId);
+                  jumpToParagraph(detail.paragraphId, detail.chapterIndex);
                 }}
                 className="mt-5 w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground"
               >

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useDragControls } from "framer-motion";
-import { Bot, Lock, Mic, SendHorizontal, Sparkles, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { Bot, Lock, Mic, SendHorizontal, Sparkles } from "lucide-react";
 
+import { SideModal } from "@/app/components/ui/SideModal";
 import { VoiceRecorderOverlay } from "@/app/components/chat/VoiceRecorderOverlay";
+import { useOverlayHistoryBinding } from "@/app/lib/hooks/useOverlayHistory";
 import { cn } from "@/app/lib/utils";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
 import type { ChatMessage } from "@/app/lib/mock/chat";
@@ -27,16 +29,14 @@ export function ChatDrawer({
   const closeChat = useAppStore((s) => s.closeChat);
   const messages = useAppStore((s) => s.chatMessages);
   const isAiTyping = useAppStore((s) => s.isAiTyping);
-  const heightPct = useAppStore((s) => s.chatDrawerHeightPct);
-  const setChatDrawerHeightPct = useAppStore((s) => s.setChatDrawerHeightPct);
   const sendChatMessage = useAppStore((s) => s.sendChatMessage);
+
+  useOverlayHistoryBinding(open, closeChat, "app.chat");
 
   const [draft, setDraft] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const micPressTimer = useRef<number | null>(null);
-
-  const dragControls = useDragControls();
 
   useEffect(() => {
     if (!open || !listRef.current) return;
@@ -75,132 +75,73 @@ export function ChatDrawer({
 
   return (
     <>
-      <AnimatePresence>
-        {open ? (
-          <>
-            <motion.button
-              type="button"
-              aria-label="关闭对话遮罩"
-              className="fixed inset-0 z-[85] bg-black/28"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => closeChat()}
-            />
-            <motion.div
-              className="font-sans fixed left-1/2 z-[90] flex w-full max-w-[430px] -translate-x-1/2 flex-col overflow-hidden rounded-t-2xl border border-border bg-background shadow-[var(--shadow-soft)]"
-              style={{
-                height: `min(${heightPct}dvh, 90dvh)`,
-                bottom: 0,
-                willChange: "transform, height",
-              }}
-              initial={{ y: "105%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "105%" }}
-              transition={{
-                type: "spring" as const,
-                stiffness: 420,
-                damping: 34,
-              }}
-              drag="y"
-              dragControls={dragControls}
-              dragListener={false}
-              dragConstraints={{ top: 0, bottom: 280 }}
-              onDragEnd={(_, info) => {
-                if (info.offset.y > 120 || info.velocity.y > 560) {
-                  closeChat();
-                  return;
-                }
-                const next =
-                  heightPct - info.offset.y / (window.innerHeight / 100);
-                setChatDrawerHeightPct(next);
-              }}
-            >
-              <div className="flex cursor-grab touch-none flex-col items-center border-b border-border/60 py-2 active:cursor-grabbing">
-                <button
-                  type="button"
-                  aria-label="拖动调整高度"
-                  onPointerDown={(e) => dragControls.start(e)}
-                  className="flex w-full flex-col items-center gap-1 rounded-lg py-1"
-                >
-                  <span className="h-1 w-10 rounded-full bg-border" />
-                </button>
-                <div className="flex w-full items-center justify-between px-3 pt-1">
-                  <p className="flex items-center gap-1.5 pl-1 text-sm font-semibold text-foreground">
-                    <Sparkles className="size-4 text-primary" strokeWidth={1.75} />
-                    和 AI 聊聊 {bookTitle}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => closeChat()}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-                    aria-label="关闭"
-                  >
-                    <X className="size-5" strokeWidth={1.75} />
-                  </button>
-                </div>
-              </div>
+      <SideModal
+        nestedLayout
+        open={open}
+        onClose={closeChat}
+        side="right"
+        panelClassName="max-h-[100dvh] w-[min(100vw,_26rem)]"
+        title={`和 AI 聊聊 ${bookTitle}`}
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div
+            ref={listRef}
+            className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-3"
+          >
+            {messages.length === 0 && !isAiTyping ? (
+              <p className="text-center text-sm text-muted-foreground">
+                和 AI 伙伴聊聊书中的段落与世界观吧。
+              </p>
+            ) : null}
+            {messages.map((m) => (
+              <MessageRow key={m.id} message={m} />
+            ))}
+            {isAiTyping ? <TypingRow /> : null}
+          </div>
 
-              <div
-                ref={listRef}
-                className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4"
+          <div className="shrink-0 border-t border-border/80 bg-background/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md">
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
+                aria-label="长按语音输入"
+                onPointerDown={startMicHold}
+                onPointerUp={clearMicHold}
+                onPointerCancel={clearMicHold}
               >
-                {messages.length === 0 && !isAiTyping ? (
-                  <p className="text-center text-sm text-muted-foreground">
-                    和小王子、玫瑰或任何段落聊聊吧。
-                  </p>
-                ) : null}
-                {messages.map((m) => (
-                  <MessageRow key={m.id} message={m} />
-                ))}
-                {isAiTyping ? <TypingRow /> : null}
-              </div>
-
-              <div className="border-t border-border/80 bg-background/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md">
-                <div className="flex items-end gap-2">
-                  <button
-                    type="button"
-                    className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
-                    aria-label="长按语音输入"
-                    onPointerDown={startMicHold}
-                    onPointerUp={clearMicHold}
-                    onPointerCancel={clearMicHold}
-                  >
-                    <Mic className="size-[1.15rem]" strokeWidth={1.75} />
-                  </button>
-                  <textarea
-                    rows={1}
-                    value={draft}
-                    placeholder="写点什么…"
-                    onChange={(e) => setDraft(e.target.value)}
-                    onInput={(e) => {
-                      const el = e.currentTarget;
-                      el.style.height = "auto";
-                      const max = 22 * 4;
-                      el.style.height = `${Math.min(el.scrollHeight, max)}px`;
-                    }}
-                    className="mb-1 min-h-[2.5rem] max-h-24 flex-1 resize-none rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring"
-                  />
-                  <button
-                    type="button"
-                    disabled={!draft.trim()}
-                    onClick={handleSend}
-                    className={cn(
-                      "mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
-                      draft.trim()
-                        ? "bg-primary text-primary-foreground shadow-[var(--shadow-soft)]"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                    aria-label="发送"
-                  >
-                    <SendHorizontal className="size-5" strokeWidth={1.75} />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        ) : null}
-      </AnimatePresence>
+                <Mic className="size-[1.15rem]" strokeWidth={1.75} />
+              </button>
+              <textarea
+                rows={1}
+                value={draft}
+                placeholder="写点什么…"
+                onChange={(e) => setDraft(e.target.value)}
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.style.height = "auto";
+                  const max = 22 * 4;
+                  el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+                }}
+                className="mb-1 min-h-[2.5rem] max-h-24 flex-1 resize-none rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring"
+              />
+              <button
+                type="button"
+                disabled={!draft.trim()}
+                onClick={handleSend}
+                className={cn(
+                  "mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
+                  draft.trim()
+                    ? "bg-primary text-primary-foreground shadow-[var(--shadow-soft)]"
+                    : "bg-muted text-muted-foreground",
+                )}
+                aria-label="发送"
+              >
+                <SendHorizontal className="size-5" strokeWidth={1.75} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </SideModal>
 
       <VoiceRecorderOverlay
         open={voiceOpen}

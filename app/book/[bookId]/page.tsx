@@ -15,7 +15,7 @@ export default async function BookCoverPage({ params }: BookCoverPageProps) {
 
   return (
     <MobileContainer>
-      <PageHeader />
+      <PageHeader title="书籍详情" />
       <main className="mx-auto flex w-full flex-1 flex-col px-6 pb-16 pt-2 sm:px-8">
         <header className="mb-2 space-y-4">
           <p className="font-sans text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">

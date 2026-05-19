@@ -1,7 +1,7 @@
 "use client";
 
-import { useAppStore } from "@/app/lib/stores/appStore";
 import { useNavigation } from "@/app/lib/hooks/useNavigation";
+import { useReaderStore } from "@/app/lib/stores/readerStore";
 import { cn } from "@/app/lib/utils";
 
 type BookCoverActionsProps = {
@@ -16,14 +16,14 @@ export function BookCoverActions({
   className,
 }: BookCoverActionsProps) {
   const { toRead } = useNavigation();
-  const setCurrentBookId = useAppStore((s) => s.setCurrentBookId);
+  const setActiveBookId = useReaderStore((s) => s.setActiveBookId);
 
   return (
     <button
       type="button"
       disabled={!isReady}
       onClick={() => {
-        setCurrentBookId(bookId);
+        setActiveBookId(bookId);
         toRead(bookId);
       }}
       className={cn(

@@ -37,11 +37,6 @@ export type ReaderSettings = {
   readSpeed: number;
 };
 
-export type BookReaderProgress = {
-  chapterIndex: number;
-  paragraphId: string | null;
-};
-
 export type ParagraphVisual = {
   id: string;
   emoji: string;
@@ -65,11 +60,10 @@ function uid(): string {
 }
 
 export type AppStoreState = {
-  currentBookId: string | null;
-  currentChapterIndex: number;
-  currentParagraphId: string | null;
   readerSettings: ReaderSettings;
-  readerProgressByBook: Record<string, BookReaderProgress>;
+
+  /** App-wide settings overlay (does not navigate to /settings). */
+  isGlobalSettingsOpen: boolean;
 
   chatMessages: ChatMessage[];
   isChatOpen: boolean;
@@ -87,16 +81,9 @@ export type AppStoreState = {
     patch: Partial<{ filterTab: MapFilterTab; scrollTop: number }>,
   ) => void;
 
-  setCurrentBookId: (id: string | null) => void;
-  setCurrentChapterIndex: (index: number) => void;
-  setCurrentParagraphId: (id: string | null) => void;
   setReaderSettings: (patch: Partial<ReaderSettings>) => void;
-  setReadingAnchor: (
-    bookId: string,
-    chapterIndex: number,
-    paragraphId: string | null,
-  ) => void;
-  resetReaderPosition: () => void;
+  openGlobalSettings: () => void;
+  closeGlobalSettings: () => void;
 
   openChat: () => void;
   closeChat: () => void;
@@ -151,11 +138,8 @@ const REVEAL_CHAPTER = 3;
 export const useAppStore = create<AppStoreState>()(
   persist(
     (set, get) => ({
-      currentBookId: null,
-      currentChapterIndex: 0,
-      currentParagraphId: null,
       readerSettings: { ...DEFAULT_READER_SETTINGS },
-      readerProgressByBook: {},
+      isGlobalSettingsOpen: false,
 
       chatMessages: [],
       isChatOpen: false,
@@ -172,29 +156,14 @@ export const useAppStore = create<AppStoreState>()(
       mockUser: { ...DEFAULT_MOCK_USER },
       mockTokenUsage: { ...DEFAULT_MOCK_TOKEN },
 
-      setCurrentBookId: (currentBookId) => set({ currentBookId }),
-      setCurrentChapterIndex: (currentChapterIndex) =>
-        set({ currentChapterIndex }),
-      setCurrentParagraphId: (currentParagraphId) =>
-        set({ currentParagraphId }),
-
       setReaderSettings: (patch) =>
         set((s) => ({
           readerSettings: { ...s.readerSettings, ...patch },
         })),
 
-      setReadingAnchor: (bookId, chapterIndex, paragraphId) =>
-        set((s) => ({
-          currentChapterIndex: chapterIndex,
-          currentParagraphId: paragraphId,
-          readerProgressByBook: {
-            ...s.readerProgressByBook,
-            [bookId]: { chapterIndex, paragraphId },
-          },
-        })),
+      openGlobalSettings: () => set({ isGlobalSettingsOpen: true }),
 
-      resetReaderPosition: () =>
-        set({ currentChapterIndex: 0, currentParagraphId: null }),
+      closeGlobalSettings: () => set({ isGlobalSettingsOpen: false }),
 
       openChat: () => set({ isChatOpen: true }),
 
@@ -398,11 +367,7 @@ export const useAppStore = create<AppStoreState>()(
         typeof window !== "undefined" ? window.localStorage : memoryStorage,
       ),
       partialize: (state) => ({
-        currentBookId: state.currentBookId,
-        currentChapterIndex: state.currentChapterIndex,
-        currentParagraphId: state.currentParagraphId,
         readerSettings: state.readerSettings,
-        readerProgressByBook: state.readerProgressByBook,
         chatMessages: state.chatMessages,
         pendingQuestions: state.pendingQuestions,
         mapSessionByBook: state.mapSessionByBook,
@@ -414,17 +379,13 @@ export const useAppStore = create<AppStoreState>()(
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AppStoreState> | undefined;
+
         return {
           ...current,
-          ...p,
           readerSettings: {
             ...DEFAULT_READER_SETTINGS,
             ...current.readerSettings,
             ...p?.readerSettings,
-          },
-          readerProgressByBook: {
-            ...current.readerProgressByBook,
-            ...p?.readerProgressByBook,
           },
           chatMessages: p?.chatMessages ?? current.chatMessages,
           pendingQuestions:
@@ -453,6 +414,7 @@ export const useAppStore = create<AppStoreState>()(
           },
           isChatOpen: false,
           isAiTyping: false,
+          isGlobalSettingsOpen: false,
         };
       },
     },

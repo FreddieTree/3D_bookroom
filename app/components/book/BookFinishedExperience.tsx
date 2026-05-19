@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   AnimatePresence,
@@ -26,6 +25,8 @@ import {
 } from "@/app/lib/mock/finished-celebration";
 import type { BookMeta } from "@/app/lib/data/books";
 import { getBookById } from "@/app/lib/data/books";
+import { PageHeader } from "@/app/components/layout/PageHeader";
+import { useNavigation } from "@/app/lib/hooks/useNavigation";
 import type { ParagraphVisual } from "@/app/lib/stores/appStore";
 import { useAppStore } from "@/app/lib/stores/appStore";
 import { cn } from "@/app/lib/utils";
@@ -298,6 +299,7 @@ type BookFinishedExperienceProps = {
 
 export function BookFinishedExperience({ bookId }: BookFinishedExperienceProps) {
   const book: BookMeta | undefined = useMemo(() => getBookById(bookId), [bookId]);
+  const { toHome, toRead } = useNavigation();
   const chatMessages = useAppStore((s) => s.chatMessages);
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
   const paragraphVisualsByBook = useAppStore((s) => s.paragraphVisualsByBook);
@@ -325,20 +327,21 @@ export function BookFinishedExperience({ bookId }: BookFinishedExperienceProps) 
       <Fireworks reducedMotion={!!reduceMotion} />
       <FallingSparkles reducedMotion={!!reduceMotion} />
 
-      <div className="relative z-[1] flex items-center justify-between px-5 pt-3 pb-2">
-        <Link
-          href={`/book/${bookId}/read`}
-          prefetch={false}
-          className="font-sans text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          返回阅读
-        </Link>
-        <span className="font-sans text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-          庆祝
-        </span>
+      <div className="relative z-[1] px-0">
+        <PageHeader
+          title={title}
+          subtitle="读完啦"
+          right={
+            <span className="font-sans pr-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+              庆祝
+            </span>
+          }
+          className="border-transparent bg-background/85"
+          elevated
+        />
       </div>
 
-      <main className="relative z-[1] flex flex-1 flex-col px-5 pb-28 pt-2 sm:px-7">
+      <main className="relative z-[1] flex flex-1 flex-col px-5 pb-28 pt-1 sm:px-7">
         <motion.header
           className="mb-8 space-y-3 text-center"
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -479,20 +482,20 @@ export function BookFinishedExperience({ bookId }: BookFinishedExperienceProps) 
               >
                 分享我的{title}之旅
               </button>
-              <Link
-                href="/"
-                prefetch={false}
-                className="font-sans inline-flex h-12 items-center justify-center rounded-2xl border border-border text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              <button
+                type="button"
+                className="font-sans inline-flex h-12 w-full items-center justify-center rounded-2xl border border-border text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                onClick={() => toHome()}
               >
                 再读一本
-              </Link>
-              <Link
-                href={`/book/${bookId}/read`}
-                prefetch={false}
-                className="font-sans inline-flex h-12 items-center justify-center rounded-2xl border border-transparent text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              </button>
+              <button
+                type="button"
+                className="font-sans inline-flex h-12 w-full items-center justify-center rounded-2xl border border-transparent text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                onClick={() => toRead(bookId)}
               >
                 回到这本书
-              </Link>
+              </button>
             </div>
           </RevealSection>
         </div>

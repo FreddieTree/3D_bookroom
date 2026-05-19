@@ -4,20 +4,20 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import type { BookMeta } from "@/app/lib/data/books";
-import { useAppStore } from "@/app/lib/stores/appStore";
+import { useReaderStore } from "@/app/lib/stores/readerStore";
 
 type BookGridCardProps = {
   book: BookMeta;
 };
 
 export function BookGridCard({ book }: BookGridCardProps) {
-  const setCurrentBookId = useAppStore((s) => s.setCurrentBookId);
+  const setActiveBookId = useReaderStore((s) => s.setActiveBookId);
 
   return (
     <Link
       href={`/book/${book.id}`}
       prefetch
-      onClick={() => setCurrentBookId(book.id)}
+      onClick={() => setActiveBookId(book.id)}
       className="block rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <motion.div

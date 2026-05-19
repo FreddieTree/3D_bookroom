@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 import { BookGridCard } from "@/app/components/home/BookGridCard";
 import { BOOKS } from "@/app/lib/data/books";
+import { useAppStore } from "@/app/lib/stores/appStore";
 
 const listVariants = {
   hidden: { opacity: 0 },
@@ -24,6 +25,8 @@ const itemVariants = {
 };
 
 export function LibraryGrid() {
+  const openGlobalSettings = useAppStore((s) => s.openGlobalSettings);
+
   return (
     <main className="mx-auto flex w-full flex-1 flex-col pb-16 pt-4">
       <header className="mb-8 space-y-2">
@@ -57,13 +60,13 @@ export function LibraryGrid() {
         >
           返回首页书架
         </Link>
-        <Link
-          href="/settings"
-          prefetch
-          className="rounded-xl px-3 py-3 text-foreground transition-colors hover:bg-muted"
+        <button
+          type="button"
+          className="rounded-xl px-3 py-3 text-left text-foreground transition-colors hover:bg-muted"
+          onClick={() => openGlobalSettings()}
         >
           设置
-        </Link>
+        </button>
         <Link
           href="/install"
           prefetch

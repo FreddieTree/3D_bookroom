@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Bot, ChevronLeft, Map as MapIcon, MessageCircle, Mic, Settings } from "lucide-react";
-import Link from "next/link";
+import { Bot, Map as MapIcon, MessageCircle, Mic, Settings } from "lucide-react";
 
 import { ChatDrawer } from "@/app/components/chat/ChatDrawer";
+import { PageHeader } from "@/app/components/layout/PageHeader";
 import { VoiceRecorderOverlay } from "@/app/components/chat/VoiceRecorderOverlay";
 import { ImageGeneration } from "@/app/components/multimodal/ImageGeneration";
 import { ParagraphVisualAlbum } from "@/app/components/multimodal/ParagraphVisualAlbum";
 import { RadioDramaMode } from "@/app/components/multimodal/RadioDramaMode";
-import { ReaderBgmStrip } from "@/app/components/reader/ReaderBgmStrip";
 import { ImmersiveReadChrome } from "@/app/components/reader/ImmersiveReadChrome";
-import { ReaderSettingsDrawer } from "@/app/components/reader/ReaderSettingsDrawer";
+import { ReaderBgmStrip } from "@/app/components/reader/ReaderBgmStrip";
 import { ReadingProgressBackgroundSync } from "@/app/components/reader/ReadingProgressBackgroundSync";
 import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
 import { cn } from "@/app/lib/utils";
@@ -23,9 +22,9 @@ import { getChaptersForBook } from "@/app/lib/data/sample-content";
 import type { Paragraph } from "@/app/lib/data/sample-content";
 import { useNavigation } from "@/app/lib/hooks/useNavigation";
 import { useAppStore } from "@/app/lib/stores/appStore";
+import { useReaderStore } from "@/app/lib/stores/readerStore";
 
 const LONG_PRESS_MS = 500;
-const FONT_SIZES = [14, 16, 18, 20, 22] as const;
 
 type ReaderShellProps = {
   bookId: string;
@@ -45,12 +44,22 @@ export function ReaderShell({
 }: ReaderShellProps) {
   const book = getBookById(bookId);
   const chapters = getChaptersForBook(bookId);
-  const { back } = useNavigation();
+  const { back, toMap, toFinished } = useNavigation();
   const router = useRouter();
 
-  const readerProgressByBook = useAppStore((s) => s.readerProgressByBook);
-  const setReadingAnchor = useAppStore((s) => s.setReadingAnchor);
-  const setCurrentBookId = useAppStore((s) => s.setCurrentBookId);
+  const readerProgressSlice = useReaderStore((s) => s.progressByBook[bookId]);
+  const openGlobalSettings = useAppStore((s) => s.openGlobalSettings);
+
+  const setReadingAnchor = useCallback(
+    (chapterIdx: number, paragraphId: string | null) => {
+      useReaderStore.getState().setReadingPosition(bookId, {
+        chapterIndex: chapterIdx,
+        paragraphId,
+      });
+    },
+    [bookId],
+  );
+
   const openChat = useAppStore((s) => s.openChat);
   const releasePending = useAppStore((s) => s.releasePending);
   const sendChatMessage = useAppStore((s) => s.sendChatMessage);
@@ -67,7 +76,6 @@ export function ReaderShell({
 
   const [chapterIndex, setChapterIndex] = useState(0);
   const [headerVisible, setHeaderVisible] = useState(true);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [chapterEndVisible, setChapterEndVisible] = useState(false);
   const [immersivePlaying, setImmersivePlaying] = useState(true);
   const [imageGenParagraph, setImageGenParagraph] = useState<Paragraph | null>(
@@ -89,6 +97,10 @@ export function ReaderShell({
   const [footerVoiceOpen, setFooterVoiceOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollPersistTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const edgeSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const lastScrollY = useRef(0);
   const lastIoParagraph = useRef<string | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,25 +111,25 @@ export function ReaderShell({
   const totalChapters = chapters?.length ?? 0;
 
   useEffect(() => {
-    setCurrentBookId(bookId);
-  }, [bookId, setCurrentBookId]);
+    useReaderStore.getState().setActiveBookId(bookId);
+  }, [bookId]);
 
   useEffect(() => {
     if (!chapters?.length) return;
 
     const applyChapterFromStore = () => {
       const raw =
-        useAppStore.getState().readerProgressByBook[bookId]?.chapterIndex ?? 0;
+        useReaderStore.getState().progressByBook[bookId]?.chapterIndex ?? 0;
       setChapterIndex(
         Math.min(Math.max(0, raw), chapters.length - 1),
       );
     };
 
-    if (useAppStore.persist.hasHydrated()) {
+    if (useReaderStore.persist.hasHydrated()) {
       queueMicrotask(applyChapterFromStore);
     }
 
-    return useAppStore.persist.onFinishHydration(() => {
+    return useReaderStore.persist.onFinishHydration(() => {
       applyChapterFromStore();
     });
   }, [bookId, chapters]);
@@ -136,12 +148,20 @@ export function ReaderShell({
 
       const nearEnd = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
       setChapterEndVisible(nearEnd);
+
+      if (scrollPersistTimer.current) clearTimeout(scrollPersistTimer.current);
+      scrollPersistTimer.current = setTimeout(() => {
+        useReaderStore.getState().setScrollOffset(bookId, y);
+      }, 450);
     };
 
     el.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [chapter]);
+    return () => {
+      if (scrollPersistTimer.current) clearTimeout(scrollPersistTimer.current);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [bookId, chapter]);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -167,7 +187,7 @@ export function ReaderShell({
         });
         if (bestId && bestId !== lastIoParagraph.current) {
           lastIoParagraph.current = bestId;
-          setReadingAnchor(bookId, chapterIndex, bestId);
+          setReadingAnchor(chapterIndex, bestId);
         }
       },
       {
@@ -183,7 +203,7 @@ export function ReaderShell({
       io.disconnect();
       ratios.clear();
     };
-  }, [bookId, chapterIndex, chapter, setReadingAnchor]);
+  }, [chapterIndex, chapter, setReadingAnchor]);
 
   useEffect(() => {
     lastIoParagraph.current = null;
@@ -197,7 +217,7 @@ export function ReaderShell({
     if (chIdx < 0) return;
     queueMicrotask(() => {
       setChapterIndex(chIdx);
-      setReadingAnchor(bookId, chIdx, openParagraphId);
+      setReadingAnchor(chIdx, openParagraphId);
       lastIoParagraph.current = openParagraphId;
     });
     const t = window.setTimeout(() => {
@@ -226,7 +246,7 @@ export function ReaderShell({
     const firstId = chapters[idx]?.paragraphs[0]?.id ?? null;
     queueMicrotask(() => {
       setChapterIndex(idx);
-      setReadingAnchor(bookId, idx, firstId);
+      setReadingAnchor(idx, firstId);
       lastIoParagraph.current = firstId;
     });
     const t = window.setTimeout(() => {
@@ -265,7 +285,7 @@ export function ReaderShell({
   useEffect(() => {
     if (!chapter) return;
     const bookmark =
-      useAppStore.getState().readerProgressByBook[bookId]?.paragraphId;
+      useReaderStore.getState().progressByBook[bookId]?.paragraphId;
     const targetId =
       bookmark && chapter.paragraphs.some((p) => p.id === bookmark)
         ? bookmark
@@ -274,6 +294,11 @@ export function ReaderShell({
     const t = window.setTimeout(() => {
       if (targetId) {
         document.getElementById(targetId)?.scrollIntoView({ block: "center" });
+      } else {
+        const y = useReaderStore.getState().progressByBook[bookId]?.scrollOffset;
+        if (y != null && y > 0 && scrollRef.current) {
+          scrollRef.current.scrollTop = y;
+        }
       }
     }, 100);
     return () => window.clearTimeout(t);
@@ -330,7 +355,7 @@ export function ReaderShell({
   };
 
   const activeParagraphId =
-    readerProgressByBook[bookId]?.paragraphId ??
+    readerProgressSlice?.paragraphId ??
     chapter?.paragraphs[0]?.id ??
     "";
 
@@ -364,9 +389,11 @@ export function ReaderShell({
     const t = window.setTimeout(() => {
       const next = chapter.paragraphs[idx + 1];
       if (next) {
-        setReadingAnchor(bookId, chapterIndex, next.id);
+        setReadingAnchor(chapterIndex, next.id);
         lastIoParagraph.current = next.id;
         document.getElementById(next.id)?.scrollIntoView({ block: "center" });
+      } else if (chapterIndex === totalChapters - 1) {
+        toFinished(bookId);
       }
     }, ms);
     return () => window.clearTimeout(t);
@@ -379,6 +406,8 @@ export function ReaderShell({
     chapterIndex,
     readSpeed,
     setReadingAnchor,
+    toFinished,
+    totalChapters,
   ]);
 
   if (!book || !chapters?.length) {
@@ -407,85 +436,99 @@ export function ReaderShell({
       }}
     >
       <ReadingProgressBackgroundSync bookId={bookId} />
-      <motion.header
-        className="font-sans absolute left-0 right-0 top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md"
+      <motion.div
+        className="font-sans absolute left-0 right-0 top-0 z-40 overflow-hidden pointer-events-none"
         initial={false}
         animate={{
           y:
             readingDisplayMode === "immersive"
-              ? -80
+              ? -96
               : headerVisible
                 ? 0
-                : -80,
+                : -96,
         }}
         transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "transform" }}
+        style={{ willChange: "transform", pointerEvents: "none" }}
       >
-        <div className="flex h-[3.25rem] items-center gap-1 px-1 pl-0">
-          <button
-            type="button"
-            onClick={() => back()}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-foreground hover:bg-muted"
-            aria-label="返回"
-          >
-            <ChevronLeft className="size-6" strokeWidth={1.75} />
-          </button>
-          <div className="min-w-0 flex-1 px-1 text-center">
-            <p className="truncate text-[0.7rem] font-semibold text-muted-foreground">
-              {book.title}
-            </p>
-            <p className="truncate text-xs font-medium text-foreground">
-              {chapter?.title}
-            </p>
-          </div>
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => openChat()}
-              className="flex h-11 w-11 items-center justify-center rounded-lg text-primary hover:bg-muted"
-              aria-label="AI 阅读伙伴"
-            >
-              <Bot className="size-[1.2rem]" strokeWidth={1.75} />
-            </button>
-            {pendingQuestions.length > 0 ? (
-              <button
-                type="button"
-                className="absolute right-0 top-0.5 z-10 flex min-h-[1.25rem] min-w-[1.25rem] items-start justify-end rounded-sm p-0"
-                aria-label="揭晓悬念"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  releasePending();
-                }}
-              >
-                <span className="reader-pending-breathe block h-2.5 w-2.5 rounded-full bg-destructive shadow-sm ring-2 ring-background" />
-              </button>
-            ) : null}
-          </div>
-          <Link
-            href={`/book/${bookId}/map`}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-accent hover:bg-muted"
-            aria-label="阅读地图"
-          >
-            <MapIcon className="size-[1.2rem]" strokeWidth={1.75} />
-          </Link>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="阅读设置"
-          >
-            <Settings className="size-[1.15rem]" strokeWidth={1.75} />
-          </button>
+        <div className="pointer-events-auto">
+          <PageHeader
+            sticky={false}
+            elevated={headerVisible}
+            subtitle={book.title}
+            title={chapter?.title ?? ""}
+            right={
+              <div className="flex shrink-0 items-center">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => openChat()}
+                    className="flex h-11 w-11 items-center justify-center rounded-lg text-primary hover:bg-muted"
+                    aria-label="AI 阅读伙伴"
+                  >
+                    <Bot className="size-[1.2rem]" strokeWidth={1.75} />
+                  </button>
+                  {pendingQuestions.length > 0 ? (
+                    <button
+                      type="button"
+                      className="absolute right-0 top-0.5 z-10 flex min-h-[1.25rem] min-w-[1.25rem] items-start justify-end rounded-sm p-0"
+                      aria-label="揭晓悬念"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        releasePending();
+                      }}
+                    >
+                      <span className="reader-pending-breathe block h-2.5 w-2.5 rounded-full bg-destructive shadow-sm ring-2 ring-background" />
+                    </button>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toMap(bookId)}
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-accent hover:bg-muted"
+                  aria-label="阅读地图"
+                >
+                  <MapIcon className="size-[1.2rem]" strokeWidth={1.75} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openGlobalSettings()}
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="设置"
+                >
+                  <Settings className="size-[1.15rem]" strokeWidth={1.75} />
+                </button>
+              </div>
+            }
+          />
         </div>
-      </motion.header>
+      </motion.div>
 
       <div
         ref={scrollRef}
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[5.5rem] pt-[3.25rem]",
+          "flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto overscroll-contain pb-[5.5rem] pt-[3.25rem]",
           readingDisplayMode === "immersive" && "pb-32 pt-5",
         )}
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          if (!t) return;
+          edgeSwipeStart.current = { x: t.clientX, y: t.clientY };
+        }}
+        onTouchEnd={(e) => {
+          const s = edgeSwipeStart.current;
+          edgeSwipeStart.current = null;
+          if (!s) return;
+          const te = e.changedTouches[0];
+          if (!te || typeof window === "undefined") return;
+          const w = window.innerWidth;
+          const fromRightEdge = s.x > w - 36;
+          const dx = s.x - te.clientX;
+          const dy = Math.abs(te.clientY - s.y);
+          if (readingDisplayMode === "standard" && fromRightEdge && dx > 70 && dy < 90) {
+            openChat();
+          }
+        }}
       >
         <article
           className="font-serif text-foreground"
@@ -568,6 +611,25 @@ export function ReaderShell({
                 className="w-full rounded-2xl bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-soft)] transition-transform active:scale-[0.99]"
               >
                 本章结束 · 进入下一章
+              </button>
+            </motion.div>
+          ) : chapterEndVisible && chapterIndex === totalChapters - 1 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 26 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 18 }}
+              transition={{ type: "spring" as const, stiffness: 320, damping: 30 }}
+              className="font-sans px-6 pb-16 pt-4"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  safeVibrate(15);
+                  toFinished(bookId);
+                }}
+                className="w-full rounded-2xl bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-soft)] transition-transform active:scale-[0.99]"
+              >
+                读完了 · 查看庆祝页
               </button>
             </motion.div>
           ) : null}
@@ -712,12 +774,6 @@ export function ReaderShell({
         open={radioParagraph != null}
         onClose={() => setRadioParagraph(null)}
         paragraph={radioParagraph}
-      />
-
-      <ReaderSettingsDrawer
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        fontSizeOptions={FONT_SIZES}
       />
     </div>
   );

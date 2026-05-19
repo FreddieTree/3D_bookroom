@@ -7,7 +7,7 @@ import {
   getChaptersForBook,
 } from "@/app/lib/data/sample-content";
 import { DEFAULT_DEMO_USER_ID } from "@/app/lib/db/constants";
-import { useAppStore } from "@/app/lib/stores/appStore";
+import { useReaderStore } from "@/app/lib/stores/readerStore";
 
 const DEBOUNCE_MS = Number(
   process.env.NEXT_PUBLIC_PROGRESS_SYNC_DEBOUNCE_MS ?? 9000,
@@ -23,7 +23,7 @@ export function ReadingProgressBackgroundSync({
 }: {
   bookId: string;
 }) {
-  const progress = useAppStore((s) => s.readerProgressByBook[bookId]);
+  const progress = useReaderStore((s) => s.progressByBook[bookId]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastBeaconMs = useRef<number>(0);
 
@@ -70,7 +70,7 @@ export function ReadingProgressBackgroundSync({
       if (now - lastBeaconMs.current < 3500) return;
       lastBeaconMs.current = now;
 
-      const snap = useAppStore.getState().readerProgressByBook[bookId];
+      const snap = useReaderStore.getState().progressByBook[bookId];
       if (!snap?.paragraphId) return;
 
       const percent = computeReadProgressPercent(bookId, snap);
