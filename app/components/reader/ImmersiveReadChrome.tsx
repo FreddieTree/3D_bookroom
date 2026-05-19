@@ -11,7 +11,7 @@ type ImmersiveReadChromeProps = {
   onTogglePlaying: () => void;
 };
 
-const SPEEDS = [0.75, 1, 1.25, 1.5] as const;
+const SPEEDS = [0.5, 1, 1.5, 2] as const;
 
 export function ImmersiveReadChrome({
   chapterProgressPct,

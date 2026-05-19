@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/app/lib/utils";
+import { safeVibrate } from "@/app/lib/utils/vibrate";
 
 type SideModalProps = {
   open: boolean;
@@ -13,6 +14,8 @@ type SideModalProps = {
   side: "left" | "right" | "bottom";
   /** Optional header shown above children */
   title?: string;
+  /** Omit default chrome (title / close). Children supply full chrome. */
+  customHeader?: boolean;
   children: ReactNode;
   panelClassName?: string;
   nestedLayout?: boolean;
@@ -23,6 +26,7 @@ export function SideModal({
   onClose,
   side,
   title,
+  customHeader = false,
   children,
   panelClassName,
   nestedLayout = false,
@@ -39,16 +43,22 @@ export function SideModal({
   const onDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (side === "right") {
       const dx = info.offset.x;
-      if (dx > 90 || info.velocity.x > 420 || (dx > 40 && info.velocity.x > 120))
+      if (dx > 90 || info.velocity.x > 420 || (dx > 40 && info.velocity.x > 120)) {
+        safeVibrate(10);
         onClose();
+      }
     } else if (side === "left") {
       const dx = info.offset.x;
-      if (dx < -90 || info.velocity.x < -420 || (dx < -40 && info.velocity.x < -120))
+      if (dx < -90 || info.velocity.x < -420 || (dx < -40 && info.velocity.x < -120)) {
+        safeVibrate(10);
         onClose();
+      }
     } else {
       const dy = info.offset.y;
-      if (dy > 120 || info.velocity.y > 520 || (dy > 48 && info.velocity.y > 180))
+      if (dy > 120 || info.velocity.y > 520 || (dy > 48 && info.velocity.y > 180)) {
+        safeVibrate(10);
         onClose();
+      }
     }
   };
 
@@ -84,7 +94,9 @@ export function SideModal({
           <motion.aside
             role="dialog"
             aria-modal
-            aria-labelledby={title ? "side-modal-title" : undefined}
+            aria-labelledby={
+              title && !customHeader ? "side-modal-title" : undefined
+            }
             className={cn(
               "font-sans fixed z-[90] flex flex-col bg-background shadow-[var(--shadow-soft)]",
               side === "bottom"
@@ -129,7 +141,7 @@ export function SideModal({
               mass: 0.65,
             }}
           >
-            {title ? (
+            {!customHeader && title ? (
               <header
                 className={cn(
                   "flex shrink-0 items-center gap-3 border-b border-border px-4 pb-3",
@@ -150,7 +162,7 @@ export function SideModal({
                   {title}
                 </h2>
               </header>
-            ) : (
+            ) : !customHeader ? (
               <div
                 className={cn(
                   "flex shrink-0 justify-end px-2",
@@ -168,7 +180,7 @@ export function SideModal({
                   <X className="size-5 stroke-[1.75]" />
                 </button>
               </div>
-            )}
+            ) : null}
             <div
               className={cn(
                 "min-h-0 flex-1",

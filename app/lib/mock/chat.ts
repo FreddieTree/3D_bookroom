@@ -87,7 +87,7 @@ export function pickNormalReply(userText: string, paragraphId: string | null): s
 }
 
 export function spoilerQueueCopy(revealChapter: number): string {
-  return `已加入悬念队列，第 ${revealChapter} 章会揭晓`;
+  return `已记入悬念，第 ${revealChapter} 章揭晓`;
 }
 
 export function mockReleaseAnswer(pending: PendingQuestion): string {

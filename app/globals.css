@@ -324,6 +324,30 @@
     -webkit-box-decoration-break: clone;
   }
 
+  .reader-longpress-paragraph {
+    background-color: var(--surface-2);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    box-shadow:
+      0 0 0 2px color-mix(in oklch, var(--color-primary) 18%, transparent),
+      0 0 22px -6px color-mix(in oklch, var(--color-primary) 35%, transparent);
+  }
+
+  .reader-paper-shell {
+    background-color: var(--color-background);
+    background-image:
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--surface-2) 22%, transparent) 0,
+        transparent 42%
+      ),
+      repeating-linear-gradient(
+        -12deg,
+        color-mix(in oklch, var(--foreground) 1.35%, transparent) 0 1px,
+        transparent 1px 9px
+      );
+  }
+
   .reader-pending-breathe {
     animation: reader-pending-breathe 1.65s ease-in-out infinite;
   }

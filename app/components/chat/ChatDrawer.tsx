@@ -1,16 +1,54 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Bot, Lock, Mic, SendHorizontal, Sparkles } from "lucide-react";
+import {
+  Bot,
+  ChevronLeft,
+  Gift,
+  Lock,
+  Mic,
+  SendHorizontal,
+  Trash2,
+} from "lucide-react";
 
-import { SideModal } from "@/app/components/ui/SideModal";
 import { VoiceRecorderOverlay } from "@/app/components/chat/VoiceRecorderOverlay";
+import { SideModal } from "@/app/components/ui/SideModal";
 import { useOverlayHistoryBinding } from "@/app/lib/hooks/useOverlayHistory";
+import { MOCK_SUSPENSE_RELEASE_PREFIX } from "@/app/lib/mock/reading";
 import { cn } from "@/app/lib/utils";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
 import type { ChatMessage } from "@/app/lib/mock/chat";
 import { useAppStore } from "@/app/lib/stores/appStore";
+
+const FIVE_MIN = 5 * 60 * 1000;
+const MOCK_HISTORY: ChatMessage[] = [
+  {
+    id: "mock-1",
+    role: "ai",
+    type: "normal",
+    content: "你好，我读的是《小王子》这一章的开头。你希望我从哪里陪你读下去？",
+    createdAt: Date.now() - 1000 * 60 * 72,
+    isStreaming: false,
+  },
+  {
+    id: "mock-2",
+    role: "user",
+    type: "normal",
+    content: "第一段里绵羊和帽子的桥段，我总觉得有点难过。",
+    createdAt: Date.now() - 1000 * 60 * 70,
+    isStreaming: false,
+  },
+  {
+    id: "mock-3",
+    role: "ai",
+    type: "normal",
+    content:
+      "大人只想看见帽子，小王子看见的是吞下大象的蟒蛇——这里藏着一种孤独：解释权不同，世界也会不同。你如果愿意，可以告诉我你最近一次“被看懂”是什么时候。",
+    createdAt: Date.now() - 1000 * 60 * 69,
+    isStreaming: false,
+  },
+];
 
 type ChatDrawerProps = {
   bookTitle: string;
@@ -18,6 +56,11 @@ type ChatDrawerProps = {
   paragraphId: string | null;
   chapterIndex: number;
 };
+
+function formatTimeDivider(ts: number) {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
 
 export function ChatDrawer({
   bookTitle,
@@ -28,6 +71,7 @@ export function ChatDrawer({
   const open = useAppStore((s) => s.isChatOpen);
   const closeChat = useAppStore((s) => s.closeChat);
   const messages = useAppStore((s) => s.chatMessages);
+  const clearChat = useAppStore((s) => s.clearChat);
   const isAiTyping = useAppStore((s) => s.isAiTyping);
   const sendChatMessage = useAppStore((s) => s.sendChatMessage);
 
@@ -38,13 +82,17 @@ export function ChatDrawer({
   const listRef = useRef<HTMLDivElement>(null);
   const micPressTimer = useRef<number | null>(null);
 
+  const flatMessages = useMemo(() => {
+    return messages.length === 0 ? MOCK_HISTORY : messages;
+  }, [messages]);
+
   useEffect(() => {
     if (!open || !listRef.current) return;
     listRef.current.scrollTo({
       top: listRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [open, messages, isAiTyping]);
+  }, [open, flatMessages, isAiTyping]);
 
   const startMicHold = () => {
     clearMicHold();
@@ -52,12 +100,12 @@ export function ChatDrawer({
       micPressTimer.current = null;
       safeVibrate(12);
       setVoiceOpen(true);
-    }, 450);
+    }, 200);
   };
 
   const clearMicHold = () => {
     if (micPressTimer.current) {
-      clearTimeout(micPressTimer.current);
+      window.clearTimeout(micPressTimer.current);
       micPressTimer.current = null;
     }
   };
@@ -73,34 +121,83 @@ export function ChatDrawer({
     setDraft("");
   };
 
+  const rows = flatMessages.flatMap((m, i): React.ReactNode[] => {
+    const prev = flatMessages[i - 1];
+    const out: React.ReactNode[] = [];
+    if (!prev || m.createdAt - prev.createdAt > FIVE_MIN) {
+      out.push(
+        <li key={`d-${m.id}`} className="list-none px-8 py-5 text-center">
+          <span className="rounded-full bg-muted px-4 py-1.5 font-sans text-[0.6875rem] font-medium text-muted-foreground">
+            {formatTimeDivider(m.createdAt)}
+          </span>
+        </li>,
+      );
+    }
+    out.push(<MessageRow key={m.id} message={m} />);
+    return out;
+  });
+
   return (
     <>
       <SideModal
+        customHeader
         nestedLayout
         open={open}
         onClose={closeChat}
         side="right"
-        panelClassName="max-h-[100dvh] w-[min(100vw,_26rem)]"
-        title={`和 AI 聊聊 ${bookTitle}`}
+        panelClassName="max-h-[100dvh] w-[min(100vw,_26rem)] border-l border-border shadow-[var(--shadow-elevation-3)]"
       >
         <div className="flex min-h-0 flex-1 flex-col">
+          <header className="flex shrink-0 items-center gap-2 border-b border-border px-2 pb-3 pt-[max(0.65rem,env(safe-area-inset-top))]">
+            <button
+              type="button"
+              onClick={() => {
+                safeVibrate(6);
+                closeChat();
+              }}
+              className="-ml-0.5 flex size-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted"
+              aria-label="关闭"
+            >
+              <ChevronLeft className="size-6" strokeWidth={1.65} />
+            </button>
+            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden px-1">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/35 text-accent-foreground shadow-[var(--shadow-elevation-1)] ring-2 ring-accent/55">
+                <Bot className="size-[1.2rem]" strokeWidth={2} />
+              </span>
+              <div className="min-w-0">
+                <p className="line-clamp-1 font-sans text-sm font-semibold text-foreground">
+                  和 AI 聊《{bookTitle}》
+                </p>
+                <p className="line-clamp-1 font-sans text-[0.6875rem] font-medium tracking-tight text-muted-foreground">
+                  第 {chapterIndex + 1} 章 · 段落占位
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted"
+              aria-label="清空对话（占位）"
+              onClick={() => {
+                safeVibrate(5);
+                clearChat();
+              }}
+            >
+              <Trash2 className="size-[1.15rem]" strokeWidth={2} />
+            </button>
+          </header>
+
           <div
             ref={listRef}
-            className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-3"
+            className="min-h-0 flex-1 list-none overflow-y-auto overscroll-contain px-3 pb-3 pt-1"
           >
-            {messages.length === 0 && !isAiTyping ? (
-              <p className="text-center text-sm text-muted-foreground">
-                和 AI 伙伴聊聊书中的段落与世界观吧。
-              </p>
-            ) : null}
-            {messages.map((m) => (
-              <MessageRow key={m.id} message={m} />
-            ))}
-            {isAiTyping ? <TypingRow /> : null}
+            <ul role="list" className="space-y-3">
+              {rows}
+              {isAiTyping ? <TypingRow /> : null}
+            </ul>
           </div>
 
-          <div className="shrink-0 border-t border-border/80 bg-background/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md">
-            <div className="flex items-end gap-2">
+          <div className="shrink-0 border-t border-border/80 bg-background/95 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md">
+            <div className="flex items-end gap-2 px-3">
               <button
                 type="button"
                 className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
@@ -161,93 +258,106 @@ export function ChatDrawer({
 function MessageRow({ message: m }: { message: ChatMessage }) {
   if (m.type === "pending-release") {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: -28, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{
-          type: "spring" as const,
-          stiffness: 320,
-          damping: 26,
-        }}
-        className="relative overflow-hidden rounded-2xl border-2 border-primary/45 bg-[color-mix(in_oklch,var(--color-primary)_12%,var(--color-background))] px-4 py-3 text-[0.9375rem] leading-relaxed text-foreground shadow-[0_0_28px_-8px_var(--color-primary)]"
-      >
-        <p className="flex items-start gap-2">
-          <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
-          {m.content}
-        </p>
-      </motion.div>
+      <li className="list-none">
+        <motion.div
+          initial={{ opacity: 0, y: -26, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            type: "spring" as const,
+            stiffness: 320,
+            damping: 26,
+          }}
+          className="relative mx-auto max-w-[94%] overflow-hidden rounded-[1.125rem] border-2 border-amber-500/52 bg-gradient-to-br from-amber-200/45 via-muted/75 to-muted p-px shadow-[var(--shadow-elevation-2)] ring-8 ring-transparent dark:border-amber-400/52 dark:from-amber-950/50"
+        >
+          <div className="rounded-[1.0625rem] bg-[color-mix(in_oklch,var(--color-background)_94%,transparent)] px-4 py-3 text-[0.9375rem] leading-relaxed text-foreground backdrop-blur-sm">
+            <p className="flex items-start gap-2 font-medium">
+              <Gift className="mt-1 size-[1rem] shrink-0 text-primary" strokeWidth={1.95} />
+              <span className="block">
+                <span className="text-primary">{MOCK_SUSPENSE_RELEASE_PREFIX}</span>
+                {m.content}
+              </span>
+            </p>
+          </div>
+        </motion.div>
+      </li>
     );
   }
 
   if (m.role === "user") {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-end"
-      >
-        <div className="max-w-[88%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-[0.9375rem] leading-relaxed text-primary-foreground">
-          {m.content}
-        </div>
-      </motion.div>
+      <li className="list-none">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex justify-end"
+        >
+          <div className="max-w-[88%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-[0.9375rem] leading-relaxed text-primary-foreground">
+            {m.content}
+          </div>
+        </motion.div>
+      </li>
     );
   }
 
   if (m.type === "spoiler-blocked") {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-start"
-      >
-        <div className="flex max-w-[92%] gap-2 rounded-2xl border-2 border-amber-500/45 bg-amber-100/25 px-3.5 py-3 text-[0.9rem] leading-relaxed text-foreground dark:border-amber-400/35 dark:bg-amber-950/25">
-          <Lock className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.75} />
-          <span>{m.content}</span>
-        </div>
-      </motion.div>
+      <li className="list-none">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex justify-start"
+        >
+          <div className="relative flex max-w-[92%] gap-2.5 rounded-2xl border-2 border-amber-600/62 bg-transparent px-3.5 py-3 shadow-[var(--shadow-elevation-2)] backdrop-blur-sm dark:border-amber-500/72">
+            <Lock className="mt-1 size-[1.05rem] shrink-0 text-primary" strokeWidth={2} />
+            <span className="text-[0.9rem] font-medium leading-relaxed">{m.content}</span>
+          </div>
+        </motion.div>
+      </li>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex justify-start gap-2"
-    >
-      <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/25 text-accent">
-        <Bot className="size-4" strokeWidth={1.75} />
-      </div>
-      <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-[color-mix(in_oklch,var(--color-muted)_92%,var(--color-background))] px-3.5 py-2.5 text-[0.9375rem] leading-relaxed text-foreground">
-        {m.content}
-        {m.isStreaming ? (
-          <span className="ml-0.5 inline-block w-2 animate-pulse">▍</span>
-        ) : null}
-      </div>
-    </motion.div>
+    <li className="list-none">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex justify-start gap-2"
+      >
+        <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Bot className="size-4" strokeWidth={2} />
+        </div>
+        <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-[color-mix(in_oklch,var(--color-muted)_92%,var(--color-background))] px-3.5 py-2.5 text-[0.9375rem] leading-relaxed text-foreground">
+          {m.content}
+          {m.isStreaming ? (
+            <span className="ml-0.5 inline-block w-2 animate-pulse">▍</span>
+          ) : null}
+        </div>
+      </motion.div>
+    </li>
   );
 }
 
 function TypingRow() {
   return (
-    <div className="flex justify-start gap-2 pl-1">
-      <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Bot className="size-4 text-muted-foreground" strokeWidth={1.75} />
+    <li className="list-none flex justify-start gap-2 pl-1 pt-3">
+      <div className="mt-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+        <Bot className="size-4 text-muted-foreground" strokeWidth={2} />
       </div>
-      <div className="flex items-center gap-1.5 rounded-2xl bg-muted px-4 py-3">
+      <div className="flex items-center gap-1 rounded-3xl bg-muted px-6 py-[0.8rem]">
         {[0, 1, 2].map((i) => (
           <motion.span
             key={i}
-            className="block h-2 w-2 rounded-full bg-muted-foreground/75"
-            animate={{ y: [0, -5, 0], opacity: [0.45, 1, 0.45] }}
+            className="inline-block size-2.5 rounded-full bg-muted-foreground/75"
+            animate={{ y: [0, -6.5, 0], opacity: [0.4, 1, 0.43] }}
             transition={{
-              duration: 0.55,
+              duration: 0.58,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: i * 0.14,
+              delay: i * 0.12,
             }}
           />
         ))}
       </div>
-    </div>
+    </li>
   );
 }
