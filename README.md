@@ -31,6 +31,7 @@ push 到 main 分支，Vercel 自动部署。
 
 ```bash
 npm run db:seed   # 写入 `BOOKS[]` + 占位章节（EPUB stubs）+ demo persona
+npm run db:ingest [--include-little-prince] [--orphans] [--publish-orphans]  # 解析 sample_book/*.epub → Mongo（默认跳过小王子）
 npm run db:verify # catalogue / chapter / paragraph 对齐性 + 幽灵章节检测
 npm run db:test   # seed + verify + prod build — 路演前跑一次
 ```

@@ -56,13 +56,25 @@ app/lib/db/
 ├── mongodb.ts
 ├── seed.ts                 # orchestrator → catalog-seed
 ├── seed/catalog-seed.ts      # wipes + ingest BOOKS catalogue
+├── seed/epub-ingest.ts       # destructive EPUB → Chapter/Booksheet writer
+├── seed/epub-ingest-runner.ts # CLI façade (`npm run db:ingest`)
 ├── verify-catalog.ts       # referential coherence checks
 ├── http.ts                 # unified 500 payload
 ├── models/                 # schemas
 ├── repositories/           # data access layer
+app/lib/epub/
+├── epub-parse.ts / epub-html.ts / epub-xml.ts
+└── match-catalog-epubs.ts  # heuristic filename ⇒ catalogue id matcher
 ```
+
+## EPUB import（sample_book）
+
+1. **`npm run db:ingest`** 解析 ZIP（`adm-zip`）、OPF spine、Bundled HTML → `Chapter` bulk insert。
+2. 默认跳过 **`little-prince`** EPUB — 继续沿用 `sample-content` 策展；`--include-little-prince` 可重写 Mongo。
+3. **`--orphans`** 会为未匹配的 EPUB（如 `后宫甄嬛传*.epub`）创建 `extrabook-*` 私有书目；`--publish-orphans` 打开 `public`。
 
 ## 相关文档
 
 - `docs/API.md` — 所有 REST endpoints 与 teammate 接入指南；
-- MiniMax pipeline（成员 2/3）：先读 `conversation`/`pending`，再挂载生成服务。
+- MiniMax pipeline（成员 2/3）：先读 `conversation`/`pending`，再挂载生成服务；
+- `README.md` — `npm run db:ingest` 环境与 flag 备忘。

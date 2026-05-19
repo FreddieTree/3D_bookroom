@@ -10,7 +10,6 @@ import { config as loadDotenv } from "dotenv";
 import mongoose from "mongoose";
 
 import { BOOKS } from "@/app/lib/data/books";
-import { mongoEstimatedParagraphs } from "@/app/lib/data/book-db-mapping";
 import { getChaptersForBook } from "@/app/lib/data/sample-content";
 import { DEFAULT_DEMO_USER_ID } from "@/app/lib/db/constants";
 import { connectDB } from "@/app/lib/db/mongodb";
@@ -114,15 +113,25 @@ async function verify() {
         );
       }
     } else {
-      if (chCount !== 1 || chapters[0]?.paragraphs.length !== mongoEstimatedParagraphs(meta)) {
+      if (chCount === 0) {
+        fail(`${meta.id}: Mongo has zero chapters after EPUB expectations.`);
+        continue;
+      }
+
+      let paraSum = 0;
+      for (const doc of chapters) {
+        paraSum += doc.paragraphs.length;
+      }
+
+      if (paraSum !== mongo.totalParagraphs) {
         fail(
-          `${meta.id}: placeholder chapter/scaffold malformed (expect 1 scaffold chapter).`,
+          `${meta.id}: paragraph sum ${paraSum} != Book.totalParagraphs ${mongo.totalParagraphs}`,
         );
       }
 
-      if (meta.totalChapters > 1) {
+      if (meta.totalChapters !== chCount) {
         warn(
-          `${meta.id}: UI advertises ${meta.totalChapters} chapters but ingestion only scaffolded chapter 0 (expected until EPUB split).`,
+          `${meta.id}: UI 卡片 totalChapters (${meta.totalChapters}) ≠ Mongo 章节数 (${chCount}) — EPUB 拆分后属正常，可同步更新 books.ts。`,
         );
       }
     }
