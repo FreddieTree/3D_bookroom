@@ -10,6 +10,7 @@ import {
   hasReadThrough,
   chapterNumberFromParagraphId,
 } from "@/app/lib/ai/data/littlePrince";
+import { enqueueConversationPersist } from "@/app/lib/chat/persist-conversation-turn";
 import {
   spoilerQueueCopy,
   type ChatMessage,
@@ -319,11 +320,13 @@ export const useAppStore = create<AppStoreState>()(
           citations: answer.citations.length > 0 ? answer.citations : undefined,
           conceptId: answer.conceptId,
         };
+        const bid = ctx.bookId;
         set((s) => ({
           pendingQuestions: s.pendingQuestions.slice(1),
           chatMessages: [...s.chatMessages, msg],
           isChatOpen: true,
         }));
+        enqueueConversationPersist(bid, [{ role: "assistant", content: answer.text }]);
       },
 
       sendChatMessage: (text, ctx) => {
@@ -366,6 +369,8 @@ export const useAppStore = create<AppStoreState>()(
                 hasReadThrough(ctx.paragraphId, revealParagraph)
                   ? "ready"
                   : "pending";
+              const spoilerCopy =
+                verdict.spoilerCopy ?? spoilerQueueCopy(revealChapter);
               const pending: PendingQuestion = {
                 id: pendingId,
                 userQuestion: trimmed,
@@ -379,8 +384,7 @@ export const useAppStore = create<AppStoreState>()(
                 id: uid(),
                 role: "ai",
                 type: "spoiler-blocked",
-                content:
-                  verdict.spoilerCopy ?? spoilerQueueCopy(revealChapter),
+                content: spoilerCopy,
                 pendingId,
                 createdAt: Date.now(),
               };
@@ -389,6 +393,10 @@ export const useAppStore = create<AppStoreState>()(
                 pendingQuestions: [...s.pendingQuestions, pending],
                 chatMessages: [...s.chatMessages, aiMsg],
               }));
+              enqueueConversationPersist(ctx.bookId, [
+                { role: "user", content: trimmed },
+                { role: "assistant", content: spoilerCopy },
+              ]);
               return;
             }
 
@@ -422,18 +430,23 @@ export const useAppStore = create<AppStoreState>()(
                 firstChunk = false;
               });
             } catch {
+              const errAssistant = "回复暂时不可用，请检查网络后重试。";
               set((s) => ({
                 chatMessages: s.chatMessages.map((m) =>
                   m.id === aiId
                     ? {
                         ...m,
-                        content: "回复暂时不可用，请检查网络后重试。",
+                        content: errAssistant,
                         isStreaming: false,
                       }
                     : m,
                 ),
                 isAiTyping: false,
               }));
+              enqueueConversationPersist(ctx.bookId, [
+                { role: "user", content: trimmed },
+                { role: "assistant", content: errAssistant },
+              ]);
               return;
             }
 
@@ -452,6 +465,10 @@ export const useAppStore = create<AppStoreState>()(
               ),
               isAiTyping: false,
             }));
+            enqueueConversationPersist(ctx.bookId, [
+              { role: "user", content: trimmed },
+              { role: "assistant", content: answer.text },
+            ]);
           } catch {
             set({ isAiTyping: false });
           }

@@ -16,7 +16,7 @@
 
 | 路由 | 行为 |
 | --- | --- |
-| `POST /api/chat` | MiniMax stub **先响应**；会话写入延后到 [`after()`](https://nextjs.org/docs/app/api-reference/functions/after)，降低首包耗时。 |
+| `POST /api/chat` | MiniMax stub **先响应**；会话写入延后到 [`after()`](https://nextjs.org/docs/app/reference/functions/after)，降低首包耗时。ChatDrawer **主路径**现为客户端 AI + `POST /api/conversations/append` 同步条目。 |
   
 
 ```json
@@ -71,6 +71,29 @@
 `index` 为零基章节序号（字符串数字）。示例：`GET /api/books/little-prince/chapters/1` 读取第二章。
 
 章节找不到：`404`。非法序号：`400`。
+
+---
+
+## `POST /api/conversations/append`
+
+将一条或多条对话条目追加到 Mongo **`conversations`**（与前端 Zustand 并行，用于审计 / 多端复盘）。
+
+**请求体**
+
+```json
+{
+  "userId": "demo-user-001",
+  "bookId": "little-prince",
+  "entries": [
+    { "role": "user", "content": "玫瑰为什么别扭？" },
+    { "role": "assistant", "content": "（AI 正文…）" }
+  ]
+}
+```
+
+`userId` 可省略 → 退回 `demo-user-001`。`role`：`user` | `assistant` | `system`。单条正文过长会自动截断。
+
+**响应**：`200` → `{ "ok": true, "appended": 2 }`；校验失败 → `400`；数据库不可用 → 与其他路由一致的错误 envelope。
 
 ---
 

@@ -15,6 +15,7 @@ import {
 import { VoiceRecorderOverlay } from "@/app/components/chat/VoiceRecorderOverlay";
 import { SideModal } from "@/app/components/ui/SideModal";
 import { spring } from "@/app/lib/animations";
+import { IS_DEMO_MODE } from "@/app/lib/env/demo";
 import { useOverlayHistoryBinding } from "@/app/lib/hooks/useOverlayHistory";
 import { MOCK_SUSPENSE_RELEASE_PREFIX } from "@/app/lib/mock/reading";
 import { cn } from "@/app/lib/utils";
@@ -84,7 +85,9 @@ export function ChatDrawer({
   const micPressTimer = useRef<number | null>(null);
 
   const flatMessages = useMemo(() => {
-    return messages.length === 0 ? MOCK_HISTORY : messages;
+    if (messages.length > 0) return messages;
+    if (IS_DEMO_MODE) return MOCK_HISTORY;
+    return [];
   }, [messages]);
 
   useEffect(() => {
@@ -171,7 +174,10 @@ export function ChatDrawer({
                   和 AI 聊《{bookTitle}》
                 </p>
                 <p className="line-clamp-1 font-sans text-[0.6875rem] font-medium tracking-tight text-muted-foreground">
-                  第 {chapterIndex + 1} 章 · 段落占位
+                  第 {chapterIndex + 1} 章
+                  {paragraphId
+                    ? ` · 段落 ${paragraphId.slice(0, 10)}${paragraphId.length > 10 ? "…" : ""}`
+                    : " · 未锁定段落"}
                 </p>
               </div>
             </div>
@@ -193,7 +199,18 @@ export function ChatDrawer({
             className="min-h-0 flex-1 list-none overflow-y-auto overscroll-contain px-3 pb-3 pt-1"
           >
             <ul role="list" className="space-y-3">
-              {rows}
+              {flatMessages.length === 0 && !isAiTyping ? (
+                <li className="list-none px-6 py-16 text-center">
+                  <p className="font-sans text-sm leading-relaxed text-muted-foreground">
+                    还没有消息。就着当前段落问一个问题，或使用语音输入。
+                  </p>
+                  <p className="font-sans mt-3 text-xs text-muted-foreground/80">
+                    对话会先出现在此设备本地；在线时会同步写入服务器会话库（需已配置 MongoDB）。
+                  </p>
+                </li>
+              ) : (
+                rows
+              )}
               {isAiTyping ? <TypingRow /> : null}
             </ul>
           </div>
@@ -330,6 +347,29 @@ function MessageRow({ message: m }: { message: ChatMessage }) {
         </div>
         <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-[color-mix(in_oklch,var(--color-muted)_92%,var(--color-background))] px-3.5 py-2.5 text-[0.9375rem] leading-relaxed text-foreground">
           {m.content}
+          {m.conceptId ? (
+            <p className="mt-2 border-t border-border/50 pt-2 font-sans text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground">
+              关联概念 · {m.conceptId.replace(/-/g, " ")}
+            </p>
+          ) : null}
+          {m.citations && m.citations.length > 0 ? (
+            <div className="mt-2 space-y-1.5 border-t border-border/50 pt-2">
+              <p className="font-sans text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                正文摘录
+              </p>
+              {m.citations.slice(0, 3).map((c, i) => (
+                <p
+                  key={`${c.paragraphId}-${String(i)}`}
+                  className="font-serif text-[0.78rem] leading-snug text-muted-foreground"
+                >
+                  <span className="font-mono-nums opacity-85">
+                    {c.paragraphId}
+                  </span>
+                  ：{c.snippet}
+                </p>
+              ))}
+            </div>
+          ) : null}
           {m.isStreaming ? (
             <span className="ml-0.5 inline-block w-2 animate-pulse">▍</span>
           ) : null}
