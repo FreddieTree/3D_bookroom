@@ -1,6 +1,6 @@
 # 三维书屋 · 成员 2 / 成员 3 接入指南
 
-适用于：长上下文 RAG + 悬念队列（成员 2）与多模态生成（成员 3）。**本仓库仍为 mock-first**；接上真实模型前请逐项对照 `audit-report.md` 里的 API gap。
+> **更新（2026-05）**：成员 2 的 **客户端 Local AI 引擎**（`app/lib/ai`、`NEXT_PUBLIC_AI_PROVIDER`）已合入 `main`；本节其余「路由缺口」与成员 3 对接仍有效。
 
 ---
 

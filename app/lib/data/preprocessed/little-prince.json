@@ -1,0 +1,302 @@
+{
+  "bookId": "little-prince",
+  "version": 1,
+  "totalParagraphs": 32,
+  "paragraphOrder": [
+    "p-c1-1", "p-c1-2", "p-c1-3", "p-c1-4", "p-c1-5",
+    "p-c1-6", "p-c1-7", "p-c1-8", "p-c1-9", "p-c1-10",
+    "p-c2-1", "p-c2-2", "p-c2-3", "p-c2-4", "p-c2-5",
+    "p-c2-6", "p-c2-7", "p-c2-8", "p-c2-9", "p-c2-10", "p-c2-11",
+    "p-c3-1", "p-c3-2", "p-c3-3", "p-c3-4", "p-c3-5",
+    "p-c3-6", "p-c3-7", "p-c3-8", "p-c3-9", "p-c3-10", "p-c3-11"
+  ],
+  "concepts": [
+    {
+      "id": "childhood-imagination",
+      "labels": ["蟒蛇", "大象", "帽子", "插图", "画", "想象力", "孩子气", "童年"],
+      "anchors": ["p-c1-1", "p-c1-4", "p-c1-5", "p-c1-7"],
+      "revealAfterParagraphId": "p-c1-5",
+      "templates": [
+        "「我画的不是帽子，是吞了大象的蟒蛇。」——大人们要的是看得见的解释，孩子要的是耐心去看见。误会有时不是视力问题，是耐心赤字。",
+        "童年那幅蟒蛇画，是叙述者第一次想对世界宣布：「我害怕，但我愿意去想」。后来他放弃画画，不是因为画得不好，而是因为没人愿意陪他看见。"
+      ],
+      "teasers": [
+        "这只「蟒蛇与帽子」的笑话，第一章末尾才会被全部解开。"
+      ]
+    },
+    {
+      "id": "sheep-in-box",
+      "labels": ["绵羊", "羊", "盒子", "画一只羊"],
+      "anchors": ["p-c1-10", "p-c2-1", "p-c2-2"],
+      "revealAfterParagraphId": "p-c2-2",
+      "templates": [
+        "盒子里的绵羊看不见，却正好留出想象的位置——大人要看得见的证明，孩子要的是信任里的形状。",
+        "小王子接连否掉飞行员画的每一只羊，直到飞行员画了一个盒子，说「羊就在里面」——这一刻，他把「看见」交给了信任，而不是眼睛。"
+      ],
+      "teasers": [
+        "为什么飞行员最后画了一个盒子？答案在第二章一开始。"
+      ]
+    },
+    {
+      "id": "rose-uniqueness",
+      "labels": ["玫瑰", "花", "那朵花", "刺", "骄傲", "任性"],
+      "anchors": ["p-c2-4", "p-c2-5", "p-c3-7", "p-c3-8"],
+      "revealAfterParagraphId": "p-c3-7",
+      "templates": [
+        "玫瑰之所以独一无二，是因为小王子为她浇灌、为她挡风——驯养就是在时间里投下的那一瞥，让平凡变得不可替代。",
+        "玫瑰带刺、骄傲又任性，但小王子为她负责。一朵在花园里和万朵一样的玫瑰，因为「你在她身上耗费的时间」而变得独一无二。"
+      ],
+      "teasers": [
+        "玫瑰为什么对小王子如此特别？答案要到第三章狐狸出场后才会显形。"
+      ]
+    },
+    {
+      "id": "taming",
+      "labels": ["驯养", "驯服", "驯化", "在意", "建立联系", "仪式"],
+      "anchors": ["p-c2-4", "p-c3-8", "p-c3-9"],
+      "revealAfterParagraphId": "p-c3-8",
+      "templates": [
+        "驯养，本就是把时间浇灌在同一件事上，让平凡变得不可替代。狐狸说：「仪式就是使某一天与其他日子不同。」",
+        "「驯养」不是控制，是建立联系。狐狸告诉小王子：你要对你驯养的对象负责——责任把自由系在一根柔韧的线上。"
+      ],
+      "teasers": [
+        "关于「驯养」最完整的解释来自第三章那只狐狸。它正在等你读到。"
+      ]
+    },
+    {
+      "id": "responsibility",
+      "labels": ["责任", "负责", "在乎", "对……负责"],
+      "anchors": ["p-c3-9"],
+      "revealAfterParagraphId": "p-c3-9",
+      "templates": [
+        "「你要对你驯养的对象负责。」——这是这本书写给所有人的句子。责任把自由系在一根柔韧的线上：既不是枷锁，也不是轻易能挣断的细丝。",
+        "在小王子的世界里，喜欢不等于负责。真正在乎一个人，是愿意每天为她除虫、挡风、对抗寂寞——哪怕她带刺。"
+      ],
+      "teasers": [
+        "「责任」这一课要等狐狸出场时才会被完整讲透。"
+      ]
+    },
+    {
+      "id": "loneliness",
+      "labels": ["孤独", "寂寞", "一个人", "陪伴"],
+      "anchors": ["p-c2-9", "p-c2-10", "p-c3-10"],
+      "revealAfterParagraphId": "p-c2-9",
+      "templates": [
+        "当你抬头看星星，你知道其中一颗上有一朵花在等你回来——孤独就不那么锋利。",
+        "真正的温暖，往往不是温度，而是被理解的瞬间。沙漠很冷，他们却像坐在看不见的炉火旁。"
+      ],
+      "teasers": [
+        "关于「孤独」的最温柔的回答，在第二章夜空那一段。"
+      ]
+    },
+    {
+      "id": "star-as-laugh",
+      "labels": ["星星", "星空", "笑声", "笑"],
+      "anchors": ["p-c1-9", "p-c2-6", "p-c3-10"],
+      "revealAfterParagraphId": "p-c3-10",
+      "templates": [
+        "当你夜里抬头，某颗星星之所以在笑，是因为远方有一颗小小行星，那里住着在乎你的人。",
+        "小王子告诉飞行员：「夜里，你抬头看星空，因为我会在其中一颗上笑——你就会觉得所有的星星都在笑。」"
+      ],
+      "teasers": [
+        "星星为什么会笑？答案在第三章最后一段。"
+      ]
+    },
+    {
+      "id": "baobab",
+      "labels": ["猴面包树", "幼苗", "拔掉", "疏忽"],
+      "anchors": ["p-c2-8"],
+      "revealAfterParagraphId": "p-c2-8",
+      "templates": [
+        "猴面包树若不早早拔掉幼苗，根系会把整颗星球撑裂。许多问题也像这样，起初只是细小的疏忽，后来却长成无法回转的命运。",
+        "小王子坚持每天早晨疏通星球——这不是勤奋，是对「疏忽会长成什么」的清醒。"
+      ],
+      "teasers": [
+        "「猴面包树」这个隐喻完整出现在第二章后半段。"
+      ]
+    },
+    {
+      "id": "six-planets-vanity",
+      "labels": ["国王", "虚荣者", "酒鬼", "商人", "点灯人", "地理学家", "大人们", "六颗行星"],
+      "anchors": ["p-c3-1", "p-c3-2", "p-c3-3", "p-c3-4", "p-c3-5", "p-c3-6"],
+      "revealAfterParagraphId": "p-c3-1",
+      "templates": [
+        "六颗行星上的国王、虚荣者、酒鬼、商人、点灯人、地理学家——每个人都占有一颗星球，却把生活过成一台只为自己轰鸣的机器。",
+        "国王只下命令，虚荣者只要崇拜，酒鬼为羞愧而喝又为喝而羞愧，商人把星星编号当作占有，点灯人尽职到失眠，地理学家从不出门——大人们的世界，奇怪得像一面镜子。"
+      ],
+      "teasers": [
+        "六颗行星上奇怪的大人们，第三章一开始就会陆续登场。"
+      ]
+    },
+    {
+      "id": "lamplighter-duty",
+      "labels": ["点灯人", "点灯", "尽职", "命令"],
+      "anchors": ["p-c3-5"],
+      "revealAfterParagraphId": "p-c3-5",
+      "templates": [
+        "点灯人每分钟点一次灯又熄一次灯，规矩比睡眠更重。他说「这是命令」——我在他疲惫的眼睛里看见一种近乎温柔的尽职。",
+        "六个大人里，小王子说他最不讨厌点灯人——因为他至少在做一件「不是为自己」的事，哪怕这件事荒唐。"
+      ],
+      "teasers": [
+        "点灯人的故事在第三章第 5 段，那是六颗行星里小王子唯一不讨厌的人。"
+      ]
+    },
+    {
+      "id": "fox-meeting",
+      "labels": ["狐狸", "麦田", "金色", "驯服我"],
+      "anchors": ["p-c3-8", "p-c3-9"],
+      "revealAfterParagraphId": "p-c3-8",
+      "templates": [
+        "狐狸出现在花园之后。它讲起驯养：「仪式就是使某一天与其他日子不同，使某一刻与其他时刻不同。」那一瞬间，风像被谁轻轻按了暂停。",
+        "狐狸是这本书的「转折者」——在它出现之前，小王子还以为自己的玫瑰只是普通的玫瑰。"
+      ],
+      "teasers": [
+        "狐狸还没出现。它在第三章第 8 段等着你。"
+      ]
+    },
+    {
+      "id": "farewell-snake",
+      "labels": ["蛇", "毒蛇", "告别", "回去", "返回"],
+      "anchors": ["p-c2-11", "p-c3-10"],
+      "revealAfterParagraphId": "p-c3-10",
+      "templates": [
+        "蛇在故事里常是一跃之间的隐喻：有些告别看起来像终结，却可能是另一种返回的起点。",
+        "小王子说要「回去浇水」时，飞行员心里清楚——这「回去」不是地理意义上的方向。"
+      ],
+      "teasers": [
+        "「告别」与「回去」的真正含义，要在第三章最后两段才会显形。"
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "id": "narrator",
+      "aliases": ["飞行员", "叙述者", "我", "驾驶员"],
+      "firstAppearParagraphId": "p-c1-1",
+      "revealAfterParagraphId": "p-c1-8",
+      "conceptIds": ["childhood-imagination"]
+    },
+    {
+      "id": "little-prince",
+      "aliases": ["小王子", "小人儿", "那个孩子", "他"],
+      "firstAppearParagraphId": "p-c1-10",
+      "revealAfterParagraphId": "p-c2-3",
+      "conceptIds": ["responsibility", "taming"]
+    },
+    {
+      "id": "sheep",
+      "aliases": ["绵羊", "羊"],
+      "firstAppearParagraphId": "p-c1-10",
+      "revealAfterParagraphId": "p-c2-2",
+      "conceptIds": ["sheep-in-box"]
+    },
+    {
+      "id": "rose",
+      "aliases": ["玫瑰", "花", "那朵花"],
+      "firstAppearParagraphId": "p-c2-4",
+      "revealAfterParagraphId": "p-c3-8",
+      "conceptIds": ["rose-uniqueness", "taming", "responsibility"]
+    },
+    {
+      "id": "fox",
+      "aliases": ["狐狸"],
+      "firstAppearParagraphId": "p-c3-8",
+      "revealAfterParagraphId": "p-c3-9",
+      "conceptIds": ["taming", "fox-meeting", "responsibility"]
+    },
+    {
+      "id": "snake",
+      "aliases": ["蛇", "毒蛇"],
+      "firstAppearParagraphId": "p-c1-1",
+      "revealAfterParagraphId": "p-c3-10",
+      "conceptIds": ["farewell-snake"]
+    },
+    {
+      "id": "baobab",
+      "aliases": ["猴面包树"],
+      "firstAppearParagraphId": "p-c2-8",
+      "revealAfterParagraphId": "p-c2-8",
+      "conceptIds": ["baobab"]
+    },
+    {
+      "id": "king",
+      "aliases": ["国王"],
+      "firstAppearParagraphId": "p-c3-2",
+      "revealAfterParagraphId": "p-c3-2",
+      "conceptIds": ["six-planets-vanity"]
+    },
+    {
+      "id": "vain-man",
+      "aliases": ["虚荣者", "爱慕虚荣的人"],
+      "firstAppearParagraphId": "p-c3-2",
+      "revealAfterParagraphId": "p-c3-2",
+      "conceptIds": ["six-planets-vanity"]
+    },
+    {
+      "id": "drunkard",
+      "aliases": ["酒鬼", "醉汉"],
+      "firstAppearParagraphId": "p-c3-3",
+      "revealAfterParagraphId": "p-c3-3",
+      "conceptIds": ["six-planets-vanity"]
+    },
+    {
+      "id": "businessman",
+      "aliases": ["商人", "做生意的人"],
+      "firstAppearParagraphId": "p-c3-4",
+      "revealAfterParagraphId": "p-c3-4",
+      "conceptIds": ["six-planets-vanity"]
+    },
+    {
+      "id": "lamplighter",
+      "aliases": ["点灯人"],
+      "firstAppearParagraphId": "p-c3-5",
+      "revealAfterParagraphId": "p-c3-5",
+      "conceptIds": ["lamplighter-duty", "six-planets-vanity"]
+    },
+    {
+      "id": "geographer",
+      "aliases": ["地理学家"],
+      "firstAppearParagraphId": "p-c3-6",
+      "revealAfterParagraphId": "p-c3-6",
+      "conceptIds": ["six-planets-vanity"]
+    }
+  ],
+  "spoilerCircles": [
+    {
+      "id": "fox-taming",
+      "startParagraphId": "p-c3-8",
+      "endParagraphId": "p-c3-9",
+      "topics": ["taming", "responsibility", "fox-meeting"]
+    },
+    {
+      "id": "snake-farewell",
+      "startParagraphId": "p-c3-10",
+      "endParagraphId": "p-c3-11",
+      "topics": ["farewell-snake", "star-as-laugh"]
+    },
+    {
+      "id": "rose-revealed",
+      "startParagraphId": "p-c3-7",
+      "endParagraphId": "p-c3-8",
+      "topics": ["rose-uniqueness"]
+    }
+  ],
+  "mapSeeds": [
+    { "kind": "character", "entityId": "narrator", "paragraphId": "p-c1-1", "title": "叙述者「我」", "preview": "六岁那年，他画了一条吞下大象的蟒蛇。" },
+    { "kind": "character", "entityId": "sheep", "paragraphId": "p-c1-10", "title": "请给我画一只绵羊", "preview": "小人儿的第一句话，像一句密码。" },
+    { "kind": "character", "entityId": "little-prince", "paragraphId": "p-c2-1", "title": "小王子登场", "preview": "他来自一颗小行星，星球只比他略大一点。" },
+    { "kind": "character", "entityId": "rose", "paragraphId": "p-c2-4", "title": "玫瑰登场", "preview": "她骄傲、任性、带刺；他既骄傲又不安。" },
+    { "kind": "character", "entityId": "baobab", "paragraphId": "p-c2-8", "title": "猴面包树的危险", "preview": "幼苗不拔，会把整颗星球撑裂。" },
+    { "kind": "character", "entityId": "king", "paragraphId": "p-c3-2", "title": "国王 · 虚荣者", "preview": "命令没有人可命令，崇拜没有人可崇拜。" },
+    { "kind": "character", "entityId": "lamplighter", "paragraphId": "p-c3-5", "title": "点灯人 · 尽职的疲惫", "preview": "每分钟点灯又熄灯，规矩比睡眠更重。" },
+    { "kind": "character", "entityId": "geographer", "paragraphId": "p-c3-6", "title": "地理学家 · 不离开书桌的人", "preview": "「玫瑰是短暂的事物」——这句话像一滴冷水。" },
+    { "kind": "character", "entityId": "fox", "paragraphId": "p-c3-8", "title": "狐狸出场", "preview": "「仪式让某一天与其他日子不同。」" },
+    { "kind": "theme", "conceptId": "sheep-in-box", "paragraphId": "p-c2-2", "title": "主题 · 看见交给信任", "preview": "盒子里的绵羊看不见，却留出想象的位置。" },
+    { "kind": "theme", "conceptId": "rose-uniqueness", "paragraphId": "p-c2-4", "title": "主题 · 独一无二的玫瑰", "preview": "驯养把平凡浇灌成不可替代。" },
+    { "kind": "theme", "conceptId": "loneliness", "paragraphId": "p-c2-9", "title": "主题 · 孤独的温度", "preview": "其中一颗星上有一朵花在等你——孤独就不那么锋利。" },
+    { "kind": "theme", "conceptId": "taming", "paragraphId": "p-c3-8", "title": "主题 · 驯养", "preview": "仪式就是使某一刻与其他时刻不同。" },
+    { "kind": "theme", "conceptId": "responsibility", "paragraphId": "p-c3-9", "title": "主题 · 责任", "preview": "你要对你驯养的对象负责。" },
+    { "kind": "theme", "conceptId": "star-as-laugh", "paragraphId": "p-c3-10", "title": "主题 · 星星会笑", "preview": "其中一颗上住着把星星当笑声的孩子。" },
+    { "kind": "bookmark", "paragraphId": "p-c1-3", "title": "标记 · 想象与有用", "preview": "大人们把「有用」看得比什么都重，却把想象力放在一旁。" }
+  ]
+}

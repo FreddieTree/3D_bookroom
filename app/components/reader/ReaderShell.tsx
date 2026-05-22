@@ -103,15 +103,22 @@ export function ReaderShell({
 
   const readerProgressSlice = useReaderStore((s) => s.progressByBook[bookId]);
 
+  const sweepAppReadingAnchor = useAppStore((s) => s.setReadingAnchor);
+
   const setReadingAnchor = useCallback(
     (chapterIdx: number, paragraphId: string | null) => {
       useReaderStore.getState().setReadingPosition(bookId, {
         chapterIndex: chapterIdx,
         paragraphId,
       });
+      sweepAppReadingAnchor(bookId, chapterIdx, paragraphId);
     },
-    [bookId],
+    [bookId, sweepAppReadingAnchor],
   );
+
+  useEffect(() => {
+    useAppStore.getState().setCurrentBookId(bookId);
+  }, [bookId]);
 
   const openChat = useAppStore((s) => s.openChat);
   const isChatOpen = useAppStore((s) => s.isChatOpen);

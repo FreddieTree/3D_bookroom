@@ -1,11 +1,33 @@
 /**
- * TODO(成员2): 将 `mockChatResponse`（及内部的 `streamChars`、`shouldDeferAsSpoiler`、模板）
- * 替换为真实 AI 接口（SSE 或 WebSocket）。保留相同对外行为即可在无改动 UI 的情况下切换。
+ * 兼容门面（thin facade）—— 不要在这里写新逻辑。
+ *
+ * 历史背景：项目早期 AI 智能集中在本文件，写死了关键词剧透判定 + 4 个模板。
+ * 现在所有实现已迁入 `app/lib/ai/` 下的 `LocalAiProvider`，
+ * 本文件保留为：
+ *   1. 类型导出（`ChatMessage` / `PendingQuestion` / `ChatMessageType`），
+ *      因为有 6 个组件直接 import 这些类型，路径迁移成本高。
+ *   2. 旧函数名转发（`shouldDeferAsSpoiler` / `spoilerQueueCopy` /
+ *      `mockChatResponse` / `mockReleaseAnswer` / `streamChars` /
+ *      `pickNormalReply`），供未迁移的调用方过渡使用。
+ *
+ * 新代码请直接 `import { getAiProvider } from "@/app/lib/ai/provider"`。
  */
 
-import { demoCharTickMs } from "@/app/lib/env/demo";
+import {
+  legacyMockChatResponse,
+  legacyMockReleaseAnswer,
+  legacyPickNormalReply,
+  legacyShouldDeferAsSpoiler,
+  legacySpoilerQueueCopy,
+  legacyStreamChars,
+} from "@/app/lib/ai/local/legacyAdapter";
 
 export type ChatMessageType = "normal" | "spoiler-blocked" | "pending-release";
+
+export interface ChatMessageCitation {
+  paragraphId: string;
+  snippet: string;
+}
 
 export interface ChatMessage {
   id: string;
@@ -16,91 +38,41 @@ export interface ChatMessage {
   /** Unix ms — persist 友好 */
   createdAt: number;
   isStreaming?: boolean;
+  /**
+   * v2 新增：AI 回答引用的段落 id + 短摘录。UI 暂未渲染；
+   * 后续可作为「出自第 N 段」chip / 阅读地图节点联动用。
+   */
+  citations?: ChatMessageCitation[];
+  /** v2 新增：本回答主 concept id（仅 AI 消息且命中时填写） */
+  conceptId?: string;
 }
 
 export interface PendingQuestion {
   id: string;
   userQuestion: string;
   paragraphId: string | null;
+  /**
+   * 旧字段（v1）：旧 UI 仍读它显示「第 N 章揭晓」。
+   * v2 起作为 derived 字段，由 `revealAfterParagraphId` 反推维护。
+   */
   revealAfterChapter: number;
+  /**
+   * v2 新增 · 权威字段：用户读到此段（含）之后，剧透可揭晓。
+   * v1 老数据迁移时根据 `revealAfterChapter` 推断为该章首段。
+   */
+  revealAfterParagraphId?: string;
+  /**
+   * v2 新增 · 队列状态：`pending`（用户尚未读到揭晓点）/ `ready`（已读到，等用户主动看）。
+   * UI 暂未消费此字段；成员 1 后续可基于它升级红点视觉。
+   */
+  status?: "pending" | "ready";
+  /** v2 新增：命中的 entity / concept id，便于后续 UI 显示「答案关于：X」。 */
+  matchedEntity?: string;
 }
 
-const SPOILER_KEYS = ["为什么", "是谁", "怎么会", "什么原因", "到底", "为何"];
-
-export function shouldDeferAsSpoiler(userText: string): boolean {
-  const t = userText.trim();
-  if (t.length < 2) return false;
-  return SPOILER_KEYS.some((k) => t.includes(k));
-}
-
-/** 逐字输出（默 20ms/字；演示模式瞬时） */
-export function streamChars(
-  fullText: string,
-  onUpdate: (partial: string) => void,
-): Promise<void> {
-  return new Promise((resolve) => {
-    const delay = demoCharTickMs(20);
-    if (delay === 0) {
-      queueMicrotask(() => {
-        onUpdate(fullText);
-        resolve();
-      });
-      return;
-    }
-    let i = 0;
-    const tick = () => {
-      i += 1;
-      onUpdate(fullText.slice(0, i));
-      if (i >= fullText.length) {
-        resolve();
-        return;
-      }
-      window.setTimeout(tick, delay);
-    };
-    if (fullText.length === 0) {
-      resolve();
-      return;
-    }
-    window.setTimeout(tick, delay);
-  });
-}
-
-const TEMPLATES = {
-  rose: "玫瑰之所以独一无二，是因为小王子为她浇灌、为她挡风——驯养就是在时间里投下的那一瞥，让平凡变得不可替代。",
-  snake: "蛇在故事里常是一跃之间的隐喻：有些告别看起来像终结，却可能是另一种返回的起点。",
-  sheep: "盒子里的绵羊看不见，却正好留出想象的位置——大人要看得见的证明，孩子要的是信任里的形状。",
-  star: "当你夜里抬头，某颗星星之所以在笑，是因为远方有一颗小小行星，那里住着在乎你的人。",
-  default:
-    "这一段像是在说：真正重要的东西，眼睛常常看不见，要用心去体会。你也可以再点名一段话，我尽量用更接近文本的方式陪你读。",
-} as const;
-
-export function pickNormalReply(userText: string, paragraphId: string | null): string {
-  void paragraphId;
-  const t = userText.toLowerCase();
-  if (/玫瑰|花/.test(userText)) return TEMPLATES.rose;
-  if (/蛇/.test(userText)) return TEMPLATES.snake;
-  if (/羊/.test(userText)) return TEMPLATES.sheep;
-  if (/星星|星/.test(userText)) return TEMPLATES.star;
-  if (/小王子|狐狸|驯养/.test(userText)) return TEMPLATES.rose;
-  if (t.length < 4) return "你可以具体写一段原文或你的困惑，我会顺着文本的语气回答。";
-  return TEMPLATES.default;
-}
-
-export function spoilerQueueCopy(revealChapter: number): string {
-  return `已记入悬念，第 ${revealChapter} 章揭晓`;
-}
-
-export function mockReleaseAnswer(pending: PendingQuestion): string {
-  return `还记得你问的「${pending.userQuestion.slice(0, 36)}${pending.userQuestion.length > 36 ? "…" : ""}」吗？答案是：真正让玫瑰变得重要的，不是她的颜色，而是你在她身上耗费的时间——驯养即责任，也是温柔。`;
-}
-
-/** Mock 统一入口：普通回复走流式逐字；悬念判定在外部（store）处理 */
-export async function mockChatResponse(
-  userText: string,
-  paragraphId: string | null,
-  onToken: (partial: string) => void,
-): Promise<string> {
-  const reply = pickNormalReply(userText, paragraphId);
-  await streamChars(reply, onToken);
-  return reply;
-}
+export const shouldDeferAsSpoiler = legacyShouldDeferAsSpoiler;
+export const streamChars = legacyStreamChars;
+export const pickNormalReply = legacyPickNormalReply;
+export const spoilerQueueCopy = legacySpoilerQueueCopy;
+export const mockReleaseAnswer = legacyMockReleaseAnswer;
+export const mockChatResponse = legacyMockChatResponse;
