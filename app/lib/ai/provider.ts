@@ -1,7 +1,7 @@
 /**
  * AI Provider 工厂（成员 2 维护）。
  *
- * 默认走 `LocalAiProvider`。设置 `NEXT_PUBLIC_AI_PROVIDER=minimax` 启用远端占位。
+ * 默认走 `LocalAiProvider`。设置 `NEXT_PUBLIC_AI_PROVIDER=minimax` 启用远端实现。
  *
  * **重要**：此工厂返回的是单例。任何模块都应调用 `getAiProvider()`，
  * 不要 `new LocalAiProvider()`，避免索引被重复构建。
