@@ -37,6 +37,20 @@ const chapterSchema = new Schema(
     totalParagraphs: { type: Number, required: true, min: 1 },
     /** Creative direction tag bridging music + viz pipelines (dreamy/tense/etc.). */
     mood: { type: String, required: true, trim: true },
+    /**
+     * 章节在长书中的位置（前言 / 正文 / 后记）。
+     * 旧数据可为空——清洗脚本会与 `bodyIndex` 一并回填。
+     */
+    chapterType: {
+      type: String,
+      enum: ["frontmatter", "body", "backmatter"],
+      default: "body",
+    },
+    /**
+     * `chapterType === "body"` 时在正文内的连续序号（从 1 起）；前言/后记为 `null`。
+     */
+    /** 非正文章节在清洗脚本中会被置为 `null` */
+    bodyIndex: { type: Number, required: false },
   },
   {
     timestamps: true,

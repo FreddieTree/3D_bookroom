@@ -187,7 +187,8 @@ export async function ingestCatalogSeed() {
       estimatedHours: meta.estimatedHours,
       language: mongoLanguage(meta),
       isReady: meta.isReady,
-      status: meta.isReady ? "public" : "private",
+      /** Shelf API lists all catalogue IDs; ingest flips readiness when EPUB lands. */
+      status: "public",
       publishedYear: undefined,
       tags: ["三维书屋", meta.id, meta.isReady ? "ready" : "pipeline"],
     });

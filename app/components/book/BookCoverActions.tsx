@@ -24,7 +24,7 @@ export function BookCoverActions({
       disabled={!isReady}
       onClick={() => {
         setActiveBookId(bookId);
-        toRead(bookId);
+        toRead(bookId, { chapter: 0 });
       }}
       className={cn(
         "font-sans mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-[0.9375rem] font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-[transform,box-shadow] enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto",

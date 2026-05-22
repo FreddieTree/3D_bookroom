@@ -21,6 +21,7 @@ export function ContinueReadingCard({
   index,
 }: ContinueReadingCardProps) {
   const setActiveBookId = useReaderStore((s) => s.setActiveBookId);
+  const progressSlice = useReaderStore((s) => s.progressByBook[book.id]);
   const navigateVt = useViewTransitionNavigate();
   const p = Math.min(100, Math.max(0, Math.round(pct)));
 
@@ -40,7 +41,10 @@ export function ContinueReadingCard({
         type="button"
         onClick={() => {
           setActiveBookId(book.id);
-          navigateVt(`/book/${book.id}/read`, { scroll: false });
+          const chapIdx = progressSlice?.chapterIndex ?? 0;
+          navigateVt(`/book/${book.id}/read?chapter=${chapIdx}`, {
+            scroll: false,
+          });
         }}
         className={cn(
           "block w-full text-left",

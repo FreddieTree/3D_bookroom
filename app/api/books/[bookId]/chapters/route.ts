@@ -1,6 +1,6 @@
 import { connectDB } from "@/app/lib/db/mongodb";
 import { databaseErrorResponse } from "@/app/lib/db/http";
-import { listChaptersByBook } from "@/app/lib/db/repositories/chapterRepository";
+import { listBodyChaptersByBook } from "@/app/lib/db/repositories/chapterRepository";
 import { normalizeDbChapterDocs } from "@/app/lib/reader/normalize-db-chapters";
 
 type Params = Promise<{ bookId: string }>;
@@ -10,7 +10,7 @@ export async function GET(_request: Request, context: { params: Params }) {
     const { bookId } = await context.params;
 
     await connectDB();
-    const docs = await listChaptersByBook(bookId);
+    const docs = await listBodyChaptersByBook(bookId);
 
     const data =
       docs.length > 0 ? normalizeDbChapterDocs(docs as never[]) : [];

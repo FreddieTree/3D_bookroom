@@ -16,7 +16,8 @@
    - 保留 `fallbacks.document` 给 Workbox 仍需的文档兜底（插件构建日志仍可能提示 precache 文档页）。**已安装旧 SW 的用户需在真机清站数据或刷新注册**。
 
 3. **真实数据库书目**  
-   - `GET /api/books` 仅返回 `status: public` 且 `isReady: true`，并映射 `bookId` → 前端 `BookMeta.id`（`mapDbBookToBookMeta`）。  
+   - `GET /api/books` 返回 `BOOKS[]` 范围内的 `status: public` 书目（含未完成 EPUB 导入的条目），`isReady` 仍为「是否已就绪」标志。  
+   - `npm run db:prune` 删除所有不在 `BOOKS[]` 的 `bookId`（清理历史 `--orphans` / `extrabook-*`）。  
    - `HomeShelf` / `LibraryGrid` 通过 `useBooksCatalog`：`NEXT_PUBLIC_USE_REAL_DB=true` 时拉 `/api/books`，失败则保留原 mock 列表。  
    - 「继续阅读」合并 `BOOKS` 与当前书架，避免仅 mock 书有进度。
 
@@ -60,8 +61,9 @@
 2. **PWA 旧缓存**  
    - iPhone：**设置 → Safari → 高级 → 网站数据**，删除本站；或卸载主屏幕图标后重装。  
 
-3. **阅读仍只有三章时**  
-   - 确认 Mongo 该书 `bookId` 与 URL 一致、章节 collection 非空、`GET /api/books/{id}/chapters` 返回非空；否则仍会回落 `sample-content`（约三章）。
+3. **阅读仍只有三章或章节不全时**  
+   - 确认 Mongo 该书 `bookId` 与 URL 一致、章节 collection 非空、`GET /api/books/{id}/chapters` 返回非空；否则仍会回落 `sample-content`（约三章）。  
+   - 将 `sample_book/` EPUB 备齐后：`npm run db:seed && npm run db:prune && npm run db:ingest -- --include-little-prince`，再 `npm run db:verify`。**不要带 `--orphans`**，除非你明确要把书单外书目写入库。
 
 ---
 
@@ -71,7 +73,7 @@
 |----|------|
 | 5.1 iPhone SE / 14 / Pro Max 无横向滚动、正文换行 | **待真机 / CDT** |
 | 5.2 清缓存后首屏非全屏离线 | **待真机**（依赖 SW 更新） |
-| 5.3 主页与图书馆本数 = 库中 public+ready | **待接库后验证** |
+| 5.3 主页与图书馆本数 / 是否在 `BOOKS[]` | **待接库后验证**（`db:prune` 后应仅存目录内书目） |
 | 5.4 设计 token / 暗色可读 | **待目视** |
 | 5.5 Performance 首页 &lt;2s、阅读 60fps | **待 Profiles** |
 | 5.6 完整演示路径（读完页等） | **待回归** |

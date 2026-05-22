@@ -58,8 +58,27 @@ export function useNavigation() {
   );
 
   const toRead = useCallback(
-    (bookId: string, opts?: { replace?: boolean }) => {
-      const href = `/book/${bookId}/read`;
+    (
+      bookId: string,
+      opts?: {
+        replace?: boolean;
+        /** 正文序列中的零基索引（与其它 body、API chapters 对齐） */
+        chapter?: number | null;
+        fromCover?: boolean;
+      },
+    ) => {
+      const params = new URLSearchParams();
+      if (
+        opts?.chapter != null &&
+        Number.isFinite(opts.chapter) &&
+        opts.chapter >= 0
+      ) {
+        params.set("chapter", String(Math.floor(opts.chapter)));
+      }
+      if (opts?.fromCover) params.set("fromCover", "1");
+      const q = params.toString() ? `?${params}` : "";
+
+      const href = `/book/${bookId}/read${q}`;
       if (opts?.replace) {
         router.replace(href, { scroll: false });
         return;

@@ -21,11 +21,11 @@ export interface BookMeta {
 export const SAMPLE_BOOK_DEDUPE_NOTE =
   "death-of-ivan-ilyich: 合并重复 epub（Толстой / Толстой 文件名变体）";
 
-/** 首页「我的书屋」固定展示三本（演示） */
+/** 首页 Mock 书单（与 Mongo `demoVisible` 三本对齐；离线 fallback） */
 export const HOMEPAGE_SHELF_BOOK_IDS = [
   "little-prince",
-  "nineteen-eighty-four",
-  "the-old-man-and-the-sea",
+  "aq-zhengzhuan",
+  "death-of-ivan-ilyich",
 ] as const;
 
 export const BOOKS: BookMeta[] = [
@@ -38,8 +38,8 @@ export const BOOKS: BookMeta[] = [
       "color-mix(in oklch, var(--color-primary) 42%, var(--color-background))",
     coverEmoji: "🌹",
     shortDesc:
-      "童话与哲理交织的星际旅程：孤独、驯养与玫瑰。当前上架试读含前三章中文内容。",
-    totalChapters: 3,
+      "童话与哲理交织的星际旅程：孤独、驯养与玫瑰。完整正文由 `sample_book` EPUB 导入（spine 分段）。",
+    totalChapters: 32,
     estimatedHours: 2,
     isReady: true,
     progress: 0.3,
@@ -55,10 +55,11 @@ export const BOOKS: BookMeta[] = [
     coverColor:
       "color-mix(in oklch, oklch(from #2a3560 l c h) 38%, var(--color-background))",
     coverEmoji: "👁️",
-    shortDesc: "监视、语言与新话：一页页逼近的寒意。书目为演示占位。",
-    totalChapters: 3,
+    shortDesc:
+      "监视、语言与新话：一页页逼近的寒意。将同名 EPUB 放入 `sample_book/` 并执行 `npm run db:ingest` 后即替换为正文。",
+    totalChapters: 1,
     estimatedHours: 8,
-    isReady: true,
+    isReady: false,
     progress: 0,
   },
   {
@@ -69,10 +70,11 @@ export const BOOKS: BookMeta[] = [
     coverColor:
       "color-mix(in oklch, oklch(from #2f4f6f l c h) 42%, var(--surface-3))",
     coverEmoji: "🐟",
-    shortDesc: "人与海的角力：疲惫、尊严与一句不肯认输的话。书目为演示占位。",
+    shortDesc:
+      "人与海的角力：疲惫、尊严与一句不肯认输的话。将同名 EPUB 放入 `sample_book/` 后即可导入全文。",
     totalChapters: 1,
     estimatedHours: 3,
-    isReady: true,
+    isReady: false,
     progress: 0.7,
   },
   {
@@ -84,10 +86,10 @@ export const BOOKS: BookMeta[] = [
       "color-mix(in oklch, var(--color-accent) 34%, var(--color-background))",
     coverEmoji: "📜",
     shortDesc:
-      "国民性解剖的经典短篇，冷峻锋利。整书解析与正文将随版本迭代持续补全。",
-    totalChapters: 1,
+      "国民性解剖的经典短篇，冷峻锋利。`sample_book` 已有 EPUB，导入后为完整拆解章节。",
+    totalChapters: 10,
     estimatedHours: 1,
-    isReady: false,
+    isReady: true,
     progress: 0,
     sourceFiles: [
       "阿Q正传 (鲁迅) (z-library.sk, 1lib.sk, z-lib.sk).epub",
@@ -101,10 +103,11 @@ export const BOOKS: BookMeta[] = [
     coverColor:
       "color-mix(in oklch, var(--color-destructive) 26%, var(--color-muted))",
     coverEmoji: "🌌",
-    shortDesc: "科幻自选集名篇：渺小与广袤的对照。预处理完成后可沉浸式阅读。",
-    totalChapters: 1,
+    shortDesc:
+      "科幻自选集名篇：渺小与广袤的对照。导入 EPUB 后为一章一卷。",
+    totalChapters: 83,
     estimatedHours: 2,
-    isReady: false,
+    isReady: true,
     progress: 0,
     sourceFiles: [
       "乡村教师·刘慈欣科幻自选集 (刘慈欣) (z-library.sk, 1lib.sk, z-lib.sk).epub",
@@ -118,10 +121,11 @@ export const BOOKS: BookMeta[] = [
     coverColor:
       "color-mix(in oklch, oklch(from #3d342b l c h) 22%, var(--color-muted))",
     coverEmoji: "🕯️",
-    shortDesc: "死亡与生命意义的终极诘问。书目条目合并了目录中的重复文件。",
-    totalChapters: 12,
+    shortDesc:
+      "死亡与生命意义的终极诘问。托尔斯泰中篇：`sample_book` 已提供 EPUB。",
+    totalChapters: 16,
     estimatedHours: 4,
-    isReady: false,
+    isReady: true,
     progress: 0,
     sourceFiles: [
       "伊凡・伊里奇之死 … 托尔斯泰 … (z-lib).epub [目录中曾存 2 份同书异编码文件名，已合并]",

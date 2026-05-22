@@ -6,7 +6,7 @@ import type { BookMeta } from "@/app/lib/data/books";
 import { USE_REAL_DB } from "@/app/lib/data-source";
 
 /**
- * 书单：mock 兜底；`NEXT_PUBLIC_USE_REAL_DB=true` 时用 `/api/books`（仅 public + isReady）。
+ * 书单：mock 兜底；`NEXT_PUBLIC_USE_REAL_DB=true` 时用 `/api/books`（public 且未被 `demoVisible:false` 排除）。
  */
 export function useBooksCatalog(initial: BookMeta[]): BookMeta[] {
   const [catalog, setCatalog] = useState<BookMeta[]>(() => initial);

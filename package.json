@@ -9,7 +9,10 @@
     "lint": "eslint",
     "icons": "node scripts/generate-pwa-icons.mjs",
     "db:seed": "tsx app/lib/db/seed.ts",
+    "db:prune": "tsx app/lib/db/prune-non-catalog.ts",
     "db:verify": "tsx app/lib/db/verify-catalog.ts",
+    "db:inspect": "tsx scripts/inspect-books.ts",
+    "db:clean": "tsx scripts/clean-books.ts",
     "db:ingest": "tsx app/lib/db/seed/epub-ingest-runner.ts",
     "db:test": "npm run db:seed && npm run db:verify && npm run build"
   },

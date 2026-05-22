@@ -9,6 +9,21 @@ const MIN_SCORE = 28;
 
 const CORE_TRIGGERS: Record<string, string[]> = {
   "little-prince": ["小王子", "圣埃克苏佩里", "Saint", "Exupery"],
+  "nineteen-eighty-four": [
+    "1984",
+    "nineteen",
+    "eighty",
+    "orwell",
+    "奥威尔",
+    "乔治",
+  ],
+  "the-old-man-and-the-sea": [
+    "老人与海",
+    "海明威",
+    "hemingway",
+    "old man",
+    "the sea",
+  ],
   "aq-zhengzhuan": ["阿Q", "阿q", "鲁迅", "正传"],
   "village-teacher": ["乡村教师", "刘慈欣"],
   "death-of-ivan-ilyich": [

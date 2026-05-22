@@ -38,6 +38,10 @@ function ok(msg: string) {
   console.info("[verify] OK:", msg);
 }
 
+function hasEpubIngestTag(tags: unknown): boolean {
+  return Array.isArray(tags) && tags.includes("src:epub");
+}
+
 async function verify() {
   console.info("[verify] connecting Atlas…");
   await connectDB();
@@ -61,8 +65,8 @@ async function verify() {
       .then((ids) => ids.filter((id) => !catalogueIds.includes(id)))) ?? [];
 
   if (strayBooks.length > 0) {
-    warn(
-      `Extraneous Atlas books outside UI catalogue (${strayBooks.join(", ")}) — safe but may confuse dashboards.`,
+    fail(
+      `Extraneous Atlas books outside UI catalogue (${strayBooks.join(", ")}) — run npm run db:prune then re-verify.`,
     );
   }
 
@@ -94,46 +98,41 @@ async function verify() {
 
     const chCount = chapters.length;
 
+    let paraSum = 0;
+    for (const doc of chapters) {
+      paraSum += doc.paragraphs.length;
+    }
+
+    if (paraSum !== mongo.totalParagraphs) {
+      fail(
+        `${meta.id}: paragraph sum ${paraSum} != Book.totalParagraphs ${mongo.totalParagraphs}`,
+      );
+      continue;
+    }
+
     const sample = getChaptersForBook(meta.id);
-    if (sample?.length) {
-      if (chCount !== sample.length) {
-        fail(
-          `${meta.id}: Mongo chapter rows=${chCount}, sample-content chapters=${sample.length}`,
-        );
-      }
+    const epubBacked = hasEpubIngestTag(mongo.tags);
 
-      let paraSum = 0;
-      for (const doc of chapters) {
-        paraSum += doc.paragraphs.length;
-      }
+    /**
+     * 手工 `sample-content` 仅用于跳过 EPUB（如默认小王子）。一旦有 `tags: src:epub`，
+     * 以 Mongo 章节为准。
+     */
+    if (sample?.length && !epubBacked && chCount !== sample.length) {
+      fail(
+        `${meta.id}: Mongo chapter rows=${chCount}, sample-content chapters=${sample.length}`,
+      );
+      continue;
+    }
 
-      if (paraSum !== mongo.totalParagraphs) {
-        fail(
-          `${meta.id}: paragraph sum ${paraSum} != Book.totalParagraphs ${mongo.totalParagraphs}`,
-        );
-      }
-    } else {
-      if (chCount === 0) {
-        fail(`${meta.id}: Mongo has zero chapters after EPUB expectations.`);
-        continue;
-      }
+    if (chCount === 0) {
+      fail(`${meta.id}: Mongo has zero chapters after EPUB expectations.`);
+      continue;
+    }
 
-      let paraSum = 0;
-      for (const doc of chapters) {
-        paraSum += doc.paragraphs.length;
-      }
-
-      if (paraSum !== mongo.totalParagraphs) {
-        fail(
-          `${meta.id}: paragraph sum ${paraSum} != Book.totalParagraphs ${mongo.totalParagraphs}`,
-        );
-      }
-
-      if (meta.totalChapters !== chCount) {
-        warn(
-          `${meta.id}: UI 卡片 totalChapters (${meta.totalChapters}) ≠ Mongo 章节数 (${chCount}) — EPUB 拆分后属正常，可同步更新 books.ts。`,
-        );
-      }
+    if (meta.totalChapters !== chCount) {
+      warn(
+        `${meta.id}: UI 卡片 totalChapters (${meta.totalChapters}) ≠ Mongo 章节数 (${chCount}) — EPUB 拆分后属正常，可同步更新 books.ts。`,
+      );
     }
   }
 

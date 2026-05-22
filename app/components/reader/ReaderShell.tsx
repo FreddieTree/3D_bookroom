@@ -33,6 +33,7 @@ import { ReaderTopChrome } from "@/app/components/reader/ReaderTopChrome";
 import { ReaderVoiceBubbles } from "@/app/components/reader/ReaderVoiceBubbles";
 import { ReadingProgressBackgroundSync } from "@/app/components/reader/ReadingProgressBackgroundSync";
 import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
+import type { BookMeta } from "@/app/lib/data/books";
 import { getBookById } from "@/app/lib/data/books";
 import type { ChapterContent, Paragraph } from "@/app/lib/data/sample-content";
 import { fetchMergedBookChapters } from "@/app/lib/reader/fetch-merged-book-chapters";
@@ -61,6 +62,8 @@ type ReaderShellProps = {
   openParagraphId?: string | null;
   openChapterIndex?: number | null;
   fromCover?: boolean;
+  /** 服务端从 Mongo 映射；缺省则用 `BOOKS`。 */
+  bookMeta?: BookMeta | null;
 };
 
 type BubbleTurn = {
@@ -74,8 +77,9 @@ export function ReaderShell({
   openParagraphId = null,
   openChapterIndex = null,
   fromCover = false,
+  bookMeta,
 }: ReaderShellProps) {
-  const book = getBookById(bookId);
+  const book = bookMeta ?? getBookById(bookId);
 
   const [chapterPack, setChapterPack] = useState<{
     bookId: string;
@@ -211,7 +215,14 @@ export function ReaderShell({
   useEffect(() => {
     if (chapters === null || chapters.length === 0) return;
 
+    const hasExplicitChapterEntry =
+      openParagraphId != null ||
+      (openChapterIndex != null &&
+        Number.isFinite(openChapterIndex) &&
+        openChapterIndex >= 0);
+
     const applyChapterFromStore = () => {
+      if (hasExplicitChapterEntry) return;
       const raw =
         useReaderStore.getState().progressByBook[bookId]?.chapterIndex ?? 0;
       setChapterIndex(
@@ -226,7 +237,7 @@ export function ReaderShell({
     return useReaderStore.persist.onFinishHydration(() => {
       applyChapterFromStore();
     });
-  }, [bookId, chapters]);
+  }, [bookId, chapters, openParagraphId, openChapterIndex]);
 
   useEffect(() => {
     const prev = prevChapterForAnim.current;
@@ -792,12 +803,12 @@ export function ReaderShell({
           }
         }}
       >
-        <div className="perspective-mid preserve-3d mx-auto flex min-h-0 min-w-0 w-full max-w-[min(42rem,_100%)] flex-1 flex-col pb-28">
+        <div className="perspective-mid preserve-3d mx-auto flex min-h-0 min-w-0 w-full max-w-[min(42rem,_100%)] flex-1 flex-col pb-10 md:pb-14">
           <AnimatePresence mode="wait">
             <ChapterTransition direction={chapterDir} key={chapterIndex}>
               <article
                 className={cn(
-                  "reader-chapter-pane font-serif text-foreground preserve-3d flex min-h-0 min-w-0 flex-1 flex-col",
+                  "reader-chapter-pane font-serif text-foreground preserve-3d flex min-h-0 min-w-0 flex-1 basis-0 flex-col",
                 )}
                 style={{
                   fontSize: `${displayFont}px`,
@@ -808,7 +819,8 @@ export function ReaderShell({
                 <div
                   ref={pagerRef}
                   style={{ overscrollBehaviorX: "contain" }}
-                  className="-mx-1 flex min-h-[calc(100dvh-13.5rem)] min-w-0 flex-1 snap-x snap-mandatory flex-row overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] md:min-h-[min(72vh,640px)] [&::-webkit-scrollbar]:hidden"
+                  className="-mx-[2px] flex min-h-0 min-w-0 flex-[1_1_0%] shrink-0 flex-row snap-x snap-mandatory items-stretch overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden motion-safe:scroll-smooth md:rounded-md"
+                  role="presentation"
                 >
                   {(chapter ?? { paragraphs: [] }).paragraphs.map((para, pi) => {
                     const visuals =
@@ -822,8 +834,12 @@ export function ReaderShell({
                         key={para.id}
                         data-paragraph-slide={para.id}
                         aria-label="阅读一页"
-                        className="flex min-h-0 min-w-0 w-full shrink-0 snap-center flex-col justify-start overflow-y-auto px-6 pb-8"
+                        className={cn(
+                          "box-border flex min-h-0 w-full shrink-0 grow-0 basis-full snap-start snap-always flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain px-[max(1.15rem,_env(safe-area-inset-left))] pb-[calc(10rem+env(safe-area-inset-bottom))] pr-[max(1.15rem,_env(safe-area-inset-right))] pt-6 sm:px-7",
+                          readingDisplayMode === "immersive" && "justify-start pt-4 pb-[calc(12rem+env(safe-area-inset-bottom))]",
+                        )}
                       >
+                        <div className="mx-auto flex w-full max-w-[min(100%,_37rem)] flex-col justify-start">
                         {ornament ? (
                           <ReaderParagraphDivider symbol={ornament} />
                         ) : null}
@@ -861,6 +877,7 @@ export function ReaderShell({
                             )
                           }
                         />
+                        </div>
                       </section>
                     );
                   })}

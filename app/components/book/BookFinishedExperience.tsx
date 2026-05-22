@@ -31,14 +31,14 @@ import {
   MOCK_SILENT_AUDIO,
   themeSongTitle,
 } from "@/app/lib/mock/finished-celebration";
-import type { BookMeta } from "@/app/lib/data/books";
-import { getBookById } from "@/app/lib/data/books";
 import { AnimatedTitle } from "@/app/components/typography/AnimatedTitle";
 import { RollingNumber } from "@/app/components/typography/RollingNumber";
 import { PageHeader } from "@/app/components/layout/PageHeader";
 import { useNavigation } from "@/app/lib/hooks/useNavigation";
+import { useBookMeta } from "@/app/lib/hooks/useBookMeta";
 import type { ParagraphVisual } from "@/app/lib/stores/appStore";
 import { useAppStore } from "@/app/lib/stores/appStore";
+import { useReaderStore } from "@/app/lib/stores/readerStore";
 import { cn } from "@/app/lib/utils";
 
 const PLACEHOLDER_VISUALS: Pick<
@@ -418,8 +418,10 @@ function ThemeVinyl({
 }
 
 function BookFinishedInner({ bookId }: { bookId: string }) {
-  const book: BookMeta | undefined = useMemo(() => getBookById(bookId), [bookId]);
+  const book = useBookMeta(bookId);
   const { toHome, toRead } = useNavigation();
+  const resumeChapter =
+    useReaderStore((s) => s.progressByBook[bookId]?.chapterIndex) ?? 0;
   const params = useSearchParams();
   const celebrate = params.get("celebrate") === "1";
 
@@ -639,7 +641,7 @@ function BookFinishedInner({ bookId }: { bookId: string }) {
               <button
                 type="button"
                 className="font-sans inline-flex h-12 w-full items-center justify-center rounded-[1.05rem] border border-transparent text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                onClick={() => toRead(bookId)}
+                onClick={() => toRead(bookId, { chapter: resumeChapter })}
               >
                 回到这本书
               </button>

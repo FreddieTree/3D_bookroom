@@ -9,6 +9,9 @@ export interface ChapterContent {
   index: number;
   title: string;
   paragraphs: Paragraph[];
+  /** Mongo 分型（样例/mock 可无）。 */
+  chapterType?: "frontmatter" | "body" | "backmatter";
+  bodyIndex?: number | null;
 }
 
 /** 公版情节梗概式中文段落，便于离线演示排版与交互（非逐字转载任一译本）。 */

@@ -9,10 +9,16 @@ export async function getAllBooks() {
   return Book.find().sort({ createdAt: -1 }).lean().exec();
 }
 
-/** 首页 / 书店：仅上架且对读者公开的书。 */
+/**
+ * 首页 / library / API：`status: public`，且不向 demo 隐藏（清洗脚本回填 `demoVisible`）。
+ * `demoVisible: false` 或缺省为 false（若写入）则被排除；未设置字段的旧文档视同可见。
+ */
 export async function listPublicReadyBooks() {
-  return Book.find({ status: "public", isReady: true })
-    .sort({ createdAt: -1 })
+  return Book.find({
+    status: "public",
+    $nor: [{ demoVisible: false }],
+  })
+    .sort({ isReady: -1, title: 1 })
     .lean()
     .exec();
 }

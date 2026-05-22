@@ -1,3 +1,4 @@
+import { mapDbBookToBookMeta } from "@/app/lib/catalog/map-book-meta";
 import { connectDB } from "@/app/lib/db/mongodb";
 import { databaseErrorResponse } from "@/app/lib/db/http";
 import { getBookById } from "@/app/lib/db/repositories/bookRepository";
@@ -17,7 +18,7 @@ export async function GET(_request: Request, context: { params: Params }) {
       });
     }
 
-    return Response.json({ data: book });
+    return Response.json({ data: mapDbBookToBookMeta(book as never) });
   } catch (error) {
     return databaseErrorResponse(error);
   }

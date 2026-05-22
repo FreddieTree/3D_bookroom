@@ -13,9 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { getBookById } from "@/app/lib/data/books";
-import type { ChapterContent } from "@/app/lib/data/sample-content";
-import { getChaptersForBook } from "@/app/lib/data/sample-content";
+import { useBookMeta } from "@/app/lib/hooks/useBookMeta";
 import { useNavigation } from "@/app/lib/hooks/useNavigation";
 import {
   getLittlePrinceMapStats,
@@ -26,6 +24,8 @@ import {
   type MapNode,
 } from "@/app/lib/mock/map-data";
 import { fetchMergedBookChapters } from "@/app/lib/reader/fetch-merged-book-chapters";
+import type { ChapterContent } from "@/app/lib/data/sample-content";
+import { getChaptersForBook } from "@/app/lib/data/sample-content";
 import { useAppStore } from "@/app/lib/stores/appStore";
 import { useReaderStore } from "@/app/lib/stores/readerStore";
 import { cn } from "@/app/lib/utils";
@@ -106,12 +106,12 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
         chapterIndex,
         paragraphId,
       });
-      toRead(bookId);
+      toRead(bookId, { chapter: chapterIndex });
     },
     [bookId, toRead],
   );
 
-  const book = getBookById(bookId);
+  const book = useBookMeta(bookId);
 
   const [tocFromApi, setTocFromApi] = useState<ChapterContent[] | null>(
     null,

@@ -14,10 +14,12 @@ type LeanChapterDoc = {
   index: number;
   title: string;
   paragraphs: LeanParagraph[];
+  chapterType?: "frontmatter" | "body" | "backmatter";
+  bodyIndex?: number | null;
 };
 
 export function normalizeDbChapterDoc(doc: LeanChapterDoc): ChapterContent {
-  const { bookId, index, title, paragraphs } = doc;
+  const { bookId, index, title, paragraphs, chapterType, bodyIndex } = doc;
   const sorted = [...paragraphs].sort((a, b) => a.order - b.order);
   const chapterFinger = `${bookId}:${index}`;
   const out: Paragraph[] = sorted.map((p) => ({
@@ -25,9 +27,16 @@ export function normalizeDbChapterDoc(doc: LeanChapterDoc): ChapterContent {
     text: p.text,
     chapterId: chapterFinger,
   }));
-  return { bookId, index, title, paragraphs: out };
+  return {
+    bookId,
+    index,
+    title,
+    paragraphs: out,
+    chapterType,
+    bodyIndex: bodyIndex ?? undefined,
+  };
 }
 
 export function normalizeDbChapterDocs(docs: LeanChapterDoc[]): ChapterContent[] {
-  return [...docs].sort((a, b) => a.index - b.index).map(normalizeDbChapterDoc);
+  return [...docs].map(normalizeDbChapterDoc);
 }

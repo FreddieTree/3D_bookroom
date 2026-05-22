@@ -5,7 +5,11 @@ import { BookCoverVtThumb } from "@/app/components/book/BookCoverVtThumb";
 import { DemoBookShortcuts } from "@/app/components/book/DemoBookShortcuts";
 import { MobileContainer } from "@/app/components/layout/MobileContainer";
 import { PageHeader } from "@/app/components/layout/PageHeader";
+import { mapDbBookToBookMeta } from "@/app/lib/catalog/map-book-meta";
 import { getBookById } from "@/app/lib/data/books";
+import { USE_REAL_DB } from "@/app/lib/data-source";
+import { connectDB } from "@/app/lib/db/mongodb";
+import { getBookById as getBookMongo } from "@/app/lib/db/repositories/bookRepository";
 
 type BookCoverPageProps = {
   params: Promise<{ bookId: string }>;
@@ -13,7 +17,18 @@ type BookCoverPageProps = {
 
 export default async function BookCoverPage({ params }: BookCoverPageProps) {
   const { bookId } = await params;
-  const book = getBookById(bookId);
+
+  let book = getBookById(bookId);
+
+  if (USE_REAL_DB) {
+    try {
+      await connectDB();
+      const doc = await getBookMongo(bookId);
+      if (doc) book = mapDbBookToBookMeta(doc as never);
+    } catch {
+      /* 保持静态 fallback */
+    }
+  }
 
   return (
     <MobileContainer>

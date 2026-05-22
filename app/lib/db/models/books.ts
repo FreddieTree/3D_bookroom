@@ -53,6 +53,8 @@ const bookSchema = new Schema(
     publishedYear: { type: Number, min: 0 },
     /** Curated hashtags / genre taxonomy for personalization engines. */
     tags: [{ type: String, trim: true }],
+    /** 首页/demo 书单是否对用户可见（清洗脚本与健康状态回填）。 */
+    demoVisible: { type: Boolean, required: false, default: true },
   },
   {
     timestamps: true,

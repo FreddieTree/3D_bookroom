@@ -16,6 +16,7 @@ import { HomeCommunityTeaser } from "@/app/components/home/HomeCommunityTeaser";
 import { ShelfBook3D } from "@/app/components/home/ShelfBook3D";
 import type { BookMeta } from "@/app/lib/data/books";
 import { BOOKS, getHomepageShelfBooks } from "@/app/lib/data/books";
+import { USE_REAL_DB } from "@/app/lib/data-source";
 import { useBooksCatalog } from "@/app/lib/hooks/useBooksCatalog";
 import { useNavigation } from "@/app/lib/hooks/useNavigation";
 import { effectiveReadingFraction } from "@/app/lib/utils/reading-progress";
@@ -77,6 +78,7 @@ export function HomeShelf() {
   );
 
   const catalogForProgress = useMemo(() => {
+    if (USE_REAL_DB) return shelfBooks;
     const byId = new Map<string, BookMeta>();
     for (const b of BOOKS) byId.set(b.id, b);
     for (const b of shelfBooks) byId.set(b.id, b);
