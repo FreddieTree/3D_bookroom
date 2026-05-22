@@ -337,9 +337,9 @@ export function ReaderShell({
   }, [readerDeepFocus]);
 
   useEffect(() => {
+    const headerTimer = headerIdleTimerRef.current;
     return () => {
-      if (headerIdleTimerRef.current)
-        window.clearTimeout(headerIdleTimerRef.current);
+      if (headerTimer) window.clearTimeout(headerTimer);
     };
   }, []);
 

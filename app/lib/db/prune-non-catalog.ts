@@ -38,19 +38,7 @@ async function prune() {
   console.info("[prune] retaining bookIds:", ALLOWED_BOOK_IDS.join(", "));
   console.info("[prune] deleting dependent rows for books NOT IN catalogue…");
 
-  const [
-    ch,
-    chAsset,
-    spoil,
-    vis,
-    pending,
-    progress,
-    conv,
-    bookmarks,
-    gen,
-    shares,
-    books,
-  ] = await Promise.all([
+  const pruneResults = await Promise.all([
     Chapter.deleteMany({ bookId: { $nin: nin } }),
     ChapterAsset.deleteMany({ bookId: { $nin: nin } }),
     SpoilerMap.deleteMany({ bookId: { $nin: nin } }),
@@ -63,6 +51,10 @@ async function prune() {
     CommunityShare.deleteMany({ bookId: { $nin: nin } }),
     Book.deleteMany({ bookId: { $nin: nin } }),
   ]);
+  const ch = pruneResults[0];
+  const chAsset = pruneResults[1];
+  const spoil = pruneResults[2];
+  const books = pruneResults[10];
 
   console.info(
     `[prune] removed chapters=${ch.deletedCount} bookRows=${books.deletedCount} (among others assets=${chAsset.deletedCount}, spoilers=${spoil.deletedCount})`,

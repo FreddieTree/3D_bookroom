@@ -15,7 +15,10 @@ export function useOverlayHistoryBinding(
 ) {
   const pushedRef = useRef(false);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;

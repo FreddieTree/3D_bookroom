@@ -1,27 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { WifiOff } from "lucide-react";
+
+function subscribe(callback: () => void) {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+  return () => {
+    window.removeEventListener("online", callback);
+    window.removeEventListener("offline", callback);
+  };
+}
+
+function getOnlineSnapshot() {
+  return navigator.onLine;
+}
 
 /**
  * 顶部弱提示：离线时显示（不阻断页面；Workbox 仍可提供缓存页）。
  */
 export function NetworkStatusBanner() {
-  const [online, setOnline] = useState(true);
-
-  useEffect(() => {
-    if (typeof navigator !== "undefined") setOnline(navigator.onLine);
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
-    return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
-  }, []);
+  const online = useSyncExternalStore(
+    subscribe,
+    getOnlineSnapshot,
+    () => true,
+  );
 
   return (
     <AnimatePresence>
