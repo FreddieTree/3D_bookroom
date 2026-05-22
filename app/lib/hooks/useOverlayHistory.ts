@@ -14,6 +14,8 @@ export function useOverlayHistoryBinding(
   token: string,
 ) {
   const pushedRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -21,7 +23,7 @@ export function useOverlayHistoryBinding(
     const onPop = () => {
       if (!pushedRef.current) return;
       pushedRef.current = false;
-      onClose();
+      onCloseRef.current();
     };
 
     if (open) {
@@ -44,5 +46,5 @@ export function useOverlayHistoryBinding(
 
     pushedRef.current = false;
     return undefined;
-  }, [open, onClose, token]);
+  }, [open, token]);
 }

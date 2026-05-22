@@ -9,11 +9,10 @@ import { WifiOff } from "lucide-react";
  * 顶部弱提示：离线时显示（不阻断页面；Workbox 仍可提供缓存页）。
  */
 export function NetworkStatusBanner() {
-  const [online, setOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true,
-  );
+  const [online, setOnline] = useState(true);
 
   useEffect(() => {
+    if (typeof navigator !== "undefined") setOnline(navigator.onLine);
     const on = () => setOnline(true);
     const off = () => setOnline(false);
     window.addEventListener("online", on);
