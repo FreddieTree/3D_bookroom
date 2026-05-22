@@ -29,14 +29,6 @@ export function ChapterTransition({ direction, children }: ChapterTransitionProp
         }}
         className="preserve-3d relative flex min-h-0 flex-1 flex-col backface-hidden"
       >
-        <div
-          className="pointer-events-none absolute inset-0 rounded-none opacity-95"
-          aria-hidden
-          style={{
-            background:
-              "linear-gradient(90deg, oklch(0 0 0 / 0.22), transparent 18%, transparent 82%, oklch(0 0 0 / 0.18))",
-          }}
-        />
         {children}
       </motion.div>
     </div>

@@ -9,7 +9,7 @@ type ReaderParagraphBlockProps = {
   paragraph: Paragraph;
   pressingId: string | null;
   menuParagraphId: string | null;
-  /** 每章第一段首字母 / 首字放大 */
+  /** 保留 API；不再使用首字下沉 */
   isLeadParagraph?: boolean;
   /** 外层 article 已通过 style 设置 fontSize — 继承排版类 */
   onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => void;
@@ -36,7 +36,7 @@ export const ReaderParagraphBlock = memo(function ReaderParagraphBlock({
         pressingId === paragraph.id && "reader-paragraph-highlight",
         menuParagraphId === paragraph.id && "reader-longpress-paragraph rounded-md",
       )}
-      style={{ marginBottom: "1.5em", fontVariantNumeric: "tabular-nums" }}
+      style={{ fontVariantNumeric: "tabular-nums" }}
     >
       <span
         className="cursor-default select-text tabular-nums"

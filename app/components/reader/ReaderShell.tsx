@@ -53,9 +53,47 @@ import { useReaderStore } from "@/app/lib/stores/readerStore";
 type WindowTimerHandle = number;
 
 const LONG_PRESS_MS = 500;
-const PAGER_NAV_HIDE_AFTER = 120;
 const CHAT_EDGE_PX_FROM_RIGHT = 56;
 const FONT_SIZE_OPTIONS = [14, 16, 18, 20, 22] as const;
+
+function paragraphOffsetInScroll(
+  scrollEl: HTMLElement,
+  paragraphId: string,
+): number | null {
+  const target = scrollEl.querySelector(
+    `[data-paragraph-id="${CSS.escape(paragraphId)}"]`,
+  ) as HTMLElement | null;
+  if (!target) return null;
+  const scrollRect = scrollEl.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  return targetRect.top - scrollRect.top + scrollEl.scrollTop;
+}
+
+function scrollContentToParagraph(
+  scrollEl: HTMLElement,
+  paragraphId: string,
+  behavior: ScrollBehavior = "auto",
+) {
+  const top = paragraphOffsetInScroll(scrollEl, paragraphId);
+  if (top == null) return;
+  scrollEl.scrollTo({ top: Math.max(0, top - 12), behavior });
+}
+
+function pickParagraphIdInView(
+  scrollEl: HTMLElement,
+  ids: string[],
+): string | null {
+  if (!ids.length) return null;
+  const probe = scrollEl.scrollTop + scrollEl.clientHeight * 0.3;
+  let active = ids[0]!;
+  for (const id of ids) {
+    const top = paragraphOffsetInScroll(scrollEl, id);
+    if (top == null) continue;
+    if (top <= probe + 8) active = id;
+    else break;
+  }
+  return active;
+}
 
 type ReaderShellProps = {
   bookId: string;
@@ -155,12 +193,6 @@ export function ReaderShell({
   const headerIdleTimerRef = useRef<WindowTimerHandle | null>(
     null,
   );
-  /** Velocity baseline — first pager sample seeds `dt` in scroll handler */
-  const pagerNavTsRef = useRef(0);
-  const pagerScrollUiClearRef = useRef<WindowTimerHandle | null>(
-    null,
-  );
-  const [pagerScrollBoost, setPagerScrollBoost] = useState(false);
   const [readerDeepFocus, setReaderDeepFocus] = useState(false);
 
   const coverFadeStarted = useRef(false);
@@ -173,14 +205,11 @@ export function ReaderShell({
 
   const [pressingId, setPressingId] = useState<string | null>(null);
 
-  const pagerRef = useRef<HTMLDivElement>(null);
+  const contentScrollRef = useRef<HTMLElement>(null);
   const scrollPersistTimer = useRef<WindowTimerHandle | null>(
     null,
   );
   const swipeGestureStart = useRef<{ x: number; y: number } | null>(null);
-
-  const lastScrollLeft = useRef(0);
-  const lastPagerApproxIdxRef = useRef(0);
 
   const anchorDebounce = useRef<number | null>(null);
 
@@ -311,103 +340,41 @@ export function ReaderShell({
     return () => {
       if (headerIdleTimerRef.current)
         window.clearTimeout(headerIdleTimerRef.current);
-      if (pagerScrollUiClearRef.current)
-        window.clearTimeout(pagerScrollUiClearRef.current);
     };
   }, []);
 
   useEffect(() => {
-    const el = pagerRef.current;
+    const el = contentScrollRef.current;
     if (!el || !chapter) return;
 
-    const runPager = () => {
-      const x = el.scrollLeft;
-      const dx = x - lastScrollLeft.current;
-      const w = Math.max(1, el.clientWidth || 360);
+    const runContentScroll = () => {
+      setHeaderVisible(true);
 
-      const nowTs =
-        typeof performance !== "undefined" ? performance.now() : Date.now();
-      const prevTs = pagerNavTsRef.current;
-      pagerNavTsRef.current = nowTs;
-      const dtMs =
-        prevTs <= 0 ? 16 : Math.max(12, nowTs - prevTs);
+      const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+      const y = el.scrollTop;
+      const scrollPct =
+        maxScroll <= 8
+          ? 100
+          : Math.min(100, Math.max(0, (y / maxScroll) * 100));
 
-      const vx = dx / dtMs;
-      const FAST = 0.032;
+      const nearEnd = maxScroll <= 8 || y >= maxScroll - 48;
+      setScrollProgressPct(nearEnd ? 100 : scrollPct);
+      setChapterEndVisible(nearEnd);
 
-      if (headerIdleTimerRef.current) {
-        window.clearTimeout(headerIdleTimerRef.current);
-        headerIdleTimerRef.current = null;
-      }
-      headerIdleTimerRef.current = window.setTimeout(() => {
-        setHeaderVisible(true);
-      }, 3000);
-
-      setPagerScrollBoost(true);
-      if (pagerScrollUiClearRef.current) {
-        window.clearTimeout(pagerScrollUiClearRef.current);
-      }
-      pagerScrollUiClearRef.current = window.setTimeout(() => {
-        setPagerScrollBoost(false);
-      }, 240);
-
-      const atStartBand = x < PAGER_NAV_HIDE_AFTER + 72;
-      const readingBack = dx < -6;
-      const readingFwd = dx > 8;
-
-      if (atStartBand || readingBack) setHeaderVisible(true);
-      else if (readingFwd && vx > FAST) setHeaderVisible(false);
-
-      lastScrollLeft.current = x;
-
-      const pc = chapter.paragraphs.length;
-      const approxIdx =
-        pc > 0
-          ? Math.min(pc - 1, Math.max(0, Math.round(x / w)))
-          : 0;
-
-      const pid = pc > 0 ? chapter.paragraphs[approxIdx]?.id ?? null : null;
+      const ids = chapter.paragraphs.map((p) => p.id);
+      const pid = pickParagraphIdInView(el, ids);
       if (pid) scheduleAnchor(pid);
-
-      lastPagerApproxIdxRef.current = approxIdx;
-
-      const maxScroll = Math.max(1, el.scrollWidth - el.clientWidth);
-      let scrollPct: number;
-      if (maxScroll <= 8 && pc > 0) {
-        scrollPct = ((approxIdx + 1) / pc) * 100;
-      } else {
-        scrollPct = Math.min(100, (x / maxScroll) * 100);
-      }
-
-      const nearChapterEndPx = maxScroll - x < 48;
-      if (
-        nearChapterEndPx ||
-        (pc > 0 &&
-          approxIdx >= pc - 1 &&
-          x >= maxScroll - w * 0.35)
-      ) {
-        setScrollProgressPct(100);
-      } else {
-        setScrollProgressPct(scrollPct);
-      }
-
-      const nearEnd =
-        pc > 0 &&
-        approxIdx >= pc - 1 &&
-        (maxScroll <= 8 || nearChapterEndPx || x >= maxScroll - 24);
-
-      setChapterEndVisible(Boolean(nearEnd));
 
       if (scrollPersistTimer.current) clearTimeout(scrollPersistTimer.current);
       scrollPersistTimer.current = window.setTimeout(() => {
-        useReaderStore.getState().setScrollOffset(bookId, Math.round(x));
+        useReaderStore.getState().setScrollOffset(bookId, Math.round(y));
       }, 520);
     };
 
-    const throttled = throttle(runPager, 100);
+    const throttled = throttle(runContentScroll, 100);
 
     el.addEventListener("scroll", throttled, { passive: true });
-    queueMicrotask(() => queueMicrotask(runPager));
+    queueMicrotask(() => queueMicrotask(runContentScroll));
     return () => {
       if (scrollPersistTimer.current) clearTimeout(scrollPersistTimer.current);
       el.removeEventListener("scroll", throttled as EventListener);
@@ -425,18 +392,9 @@ export function ReaderShell({
       setReadingAnchor(chIdx, openParagraphId);
     });
     const t = window.setTimeout(() => {
-      const el = pagerRef.current;
-      const target = chapters[chIdx]?.paragraphs.findIndex(
-        (p) => p.id === openParagraphId,
-      );
-      if (
-        el &&
-        chapters[chIdx]?.paragraphs.length &&
-        target != null &&
-        target >= 0
-      ) {
-        const w = Math.max(1, el.clientWidth || 360);
-        el.scrollTo({ left: target * w, behavior: "smooth" });
+      const el = contentScrollRef.current;
+      if (el && openParagraphId) {
+        scrollContentToParagraph(el, openParagraphId, "smooth");
       }
     }, 200);
     router.replace(`/book/${bookId}/read`, { scroll: false });
@@ -464,10 +422,8 @@ export function ReaderShell({
       setReadingAnchor(idx, firstId);
     });
     const t = window.setTimeout(() => {
-      const el = pagerRef.current;
-      if (el && chapters[idx]?.paragraphs.length) {
-        el.scrollTo({ left: 0, behavior: "smooth" });
-      }
+      const el = contentScrollRef.current;
+      if (el) el.scrollTo({ top: 0, behavior: "smooth" });
     }, 160);
     router.replace(`/book/${bookId}/read`, { scroll: false });
     return () => window.clearTimeout(t);
@@ -512,25 +468,19 @@ export function ReaderShell({
         : null;
 
     const t = window.setTimeout(() => {
-      const el = pagerRef.current;
-      const w = Math.max(1, el?.clientWidth ?? window.innerWidth ?? 360);
+      const el = contentScrollRef.current;
+      if (!el) return;
 
-      const xStore = prog?.scrollOffset ?? 0;
+      const yStore = prog?.scrollOffset ?? 0;
 
-      if (el && targetId != null) {
-        const pi = chapter.paragraphs.findIndex((p) => p.id === targetId);
-        if (pi >= 0) {
-          el.scrollLeft = pi * w;
-          lastScrollLeft.current = el.scrollLeft;
-          lastPagerApproxIdxRef.current = pi;
-          return;
-        }
+      if (targetId != null) {
+        scrollContentToParagraph(el, targetId, "auto");
+        return;
       }
 
-      if (el && xStore > 0) {
-        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
-        el.scrollLeft = Math.min(maxScroll, xStore);
-        lastScrollLeft.current = el.scrollLeft;
+      if (yStore > 0) {
+        const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+        el.scrollTop = Math.min(maxScroll, yStore);
       }
     }, 100);
 
@@ -600,11 +550,8 @@ export function ReaderShell({
       const next = chapter.paragraphs[idx + 1];
       if (next) {
         scheduleAnchor(next.id);
-        const el = pagerRef.current;
-        if (el) {
-          const w = Math.max(1, el.clientWidth || 360);
-          el.scrollTo({ left: (idx + 1) * w, behavior: "smooth" });
-        }
+        const el = contentScrollRef.current;
+        if (el) scrollContentToParagraph(el, next.id, "smooth");
       } else if (chapterIndex === totalChapters - 1) {
         toFinished(bookId, { celebrate: true });
       }
@@ -720,7 +667,7 @@ export function ReaderShell({
     <div
       data-lenis-prevent=""
       className={cn(
-        "reader-paper-shell relative flex min-h-dvh flex-col",
+        "reader-page reader-paper-shell relative flex min-h-dvh flex-1 flex-col",
       )}
     >
       <div
@@ -759,7 +706,7 @@ export function ReaderShell({
           chapterTitle={chapterHeadline}
           progressPct={mergedProgressPct}
           headerVisible={headerVisible}
-          pagerBlurBoost={pagerScrollBoost}
+          pagerBlurBoost={false}
           deepReadingHidden={
             readerDeepFocus || readingDisplayMode === "immersive"
           }
@@ -770,12 +717,10 @@ export function ReaderShell({
           onReleasePending={() => releasePending()}
         />
 
-      {/* 横向分页：每段视为一页（AI / 进度 / 书签同段落 id 对齐）。 */}
       <div
         className={cn(
-          "flex min-h-0 flex-1 touch-pan-x flex-col overflow-hidden overscroll-x-contain pb-[calc(15rem+env(safe-area-inset-bottom))]",
-          readingDisplayMode === "immersive" &&
-            "pb-[min(42dvh,_18rem)] pt-10",
+          "flex min-h-0 flex-1 flex-col overflow-hidden",
+          readingDisplayMode === "immersive" && "pt-10",
           readingDisplayMode === "standard" && "pt-[10rem]",
         )}
         onTouchStart={(e) => {
@@ -803,152 +748,148 @@ export function ReaderShell({
           }
         }}
       >
-        <div className="perspective-mid preserve-3d mx-auto flex min-h-0 min-w-0 w-full max-w-[min(42rem,_100%)] flex-1 flex-col pb-10 md:pb-14">
-          <AnimatePresence mode="wait">
-            <ChapterTransition direction={chapterDir} key={chapterIndex}>
-              <article
-                className={cn(
-                  "reader-chapter-pane font-serif text-foreground preserve-3d flex min-h-0 min-w-0 flex-1 basis-0 flex-col",
-                )}
-                style={{
-                  fontSize: `${displayFont}px`,
-                  lineHeight: 1.8,
-                  transformOrigin: "center center",
-                }}
-              >
-                <div
-                  ref={pagerRef}
-                  style={{ overscrollBehaviorX: "contain" }}
-                  className="-mx-[2px] flex min-h-0 min-w-0 flex-[1_1_0%] shrink-0 flex-row snap-x snap-mandatory items-stretch overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden motion-safe:scroll-smooth md:rounded-md"
-                  role="presentation"
+        <main
+          ref={contentScrollRef}
+          className={cn(
+            "reader-content flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
+            "px-[max(1.15rem,_env(safe-area-inset-left))] py-4",
+            "pr-[max(1.15rem,_env(safe-area-inset-right))]",
+            readingDisplayMode === "standard" &&
+              "pb-[calc(12rem+env(safe-area-inset-bottom)+24px)]",
+            readingDisplayMode === "immersive" &&
+              "pb-[calc(10rem+env(safe-area-inset-bottom))]",
+          )}
+        >
+          <div className="mx-auto w-full min-w-0 max-w-[min(42rem,_100%)]">
+            <AnimatePresence mode="wait">
+              <ChapterTransition direction={chapterDir} key={chapterIndex}>
+                <article
+                  className="reader-chapter-pane font-serif text-foreground w-full"
+                  style={{
+                    fontSize: `${displayFont}px`,
+                  }}
                 >
-                  {(chapter ?? { paragraphs: [] }).paragraphs.map((para, pi) => {
-                    const visuals =
-                      paragraphVisualsByBook[bookId]?.[para.id] ?? [];
-                    const ornament = pickParagraphOrnament(pi, para.id);
+                  {(chapter ?? { paragraphs: [] }).paragraphs.map(
+                    (para, pi) => {
+                      const visuals =
+                        paragraphVisualsByBook[bookId]?.[para.id] ?? [];
+                      const ornament = pickParagraphOrnament(pi, para.id);
+                      const revealKey = `${bookId}-${chapterIndex}-${para.id}`;
 
-                    const revealKey = `${bookId}-${chapterIndex}-${para.id}`;
-
-                    return (
-                      <section
-                        key={para.id}
-                        data-paragraph-slide={para.id}
-                        aria-label="阅读一页"
-                        className={cn(
-                          "box-border flex min-h-0 w-full shrink-0 grow-0 basis-full snap-start snap-always flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain px-[max(1.15rem,_env(safe-area-inset-left))] pb-[calc(10rem+env(safe-area-inset-bottom))] pr-[max(1.15rem,_env(safe-area-inset-right))] pt-6 sm:px-7",
-                          readingDisplayMode === "immersive" && "justify-start pt-4 pb-[calc(12rem+env(safe-area-inset-bottom))]",
-                        )}
-                      >
-                        <div className="mx-auto flex w-full max-w-[min(100%,_37rem)] flex-col justify-start">
-                        {ornament ? (
-                          <ReaderParagraphDivider symbol={ornament} />
-                        ) : null}
-                        <ReaderParagraphReveal
-                          id={revealKey}
-                          seenOnceIdsRef={revealedParasRef}
+                      return (
+                        <div
+                          key={para.id}
+                          className="w-full max-w-[min(100%,_37rem)]"
                         >
-                          <ReaderParagraphBlock
-                            paragraph={para}
-                            isLeadParagraph={pi === 0}
-                            pressingId={pressingId}
-                            menuParagraphId={menu?.paragraph.id ?? null}
-                            onPointerDown={(ev) => {
-                              if (ev.button !== 0) return;
-                              startPress(para, ev.clientX, ev.clientY);
-                            }}
-                            onPointerMove={(ev) =>
-                              moveDuringPress(ev.clientX, ev.clientY)
+                          {ornament ? (
+                            <ReaderParagraphDivider symbol={ornament} />
+                          ) : null}
+                          <ReaderParagraphReveal
+                            id={revealKey}
+                            seenOnceIdsRef={revealedParasRef}
+                          >
+                            <ReaderParagraphBlock
+                              paragraph={para}
+                              isLeadParagraph={pi === 0}
+                              pressingId={pressingId}
+                              menuParagraphId={menu?.paragraph.id ?? null}
+                              onPointerDown={(ev) => {
+                                if (ev.button !== 0) return;
+                                startPress(para, ev.clientX, ev.clientY);
+                              }}
+                              onPointerMove={(ev) =>
+                                moveDuringPress(ev.clientX, ev.clientY)
+                              }
+                              onPointerEnd={() => {
+                                clearPressTimer();
+                                setPressingId(null);
+                                pressStart.current = null;
+                              }}
+                            />
+                          </ReaderParagraphReveal>
+                          <ParagraphVisualAlbum
+                            bookId={bookId}
+                            paragraphId={para.id}
+                            visuals={visuals}
+                            expanded={expandedAlbumFor === para.id}
+                            onToggleExpanded={() =>
+                              setExpandedAlbumFor((cur) =>
+                                cur === para.id ? null : para.id,
+                              )
                             }
-                            onPointerEnd={() => {
-                              clearPressTimer();
-                              setPressingId(null);
-                              pressStart.current = null;
-                            }}
                           />
-                        </ReaderParagraphReveal>
-                        <ParagraphVisualAlbum
-                          bookId={bookId}
-                          paragraphId={para.id}
-                          visuals={visuals}
-                          expanded={expandedAlbumFor === para.id}
-                          onToggleExpanded={() =>
-                            setExpandedAlbumFor((cur) =>
-                              cur === para.id ? null : para.id,
-                            )
-                          }
-                        />
                         </div>
-                      </section>
-                    );
-                  })}
-                </div>
-              </article>
-            </ChapterTransition>
-          </AnimatePresence>
-        </div>
+                      );
+                    },
+                  )}
+                </article>
+              </ChapterTransition>
+            </AnimatePresence>
 
-        <AnimatePresence>
-          {chapterEndVisible && chapterIndex < totalChapters - 1 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 26 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 18 }}
-              transition={{
-                type: "spring" as const,
-                stiffness: 320,
-                damping: 30,
-              }}
-              className="font-sans px-6 pb-[max(2rem,_env(safe-area-inset-bottom))] pt-4"
-            >
-              <motion.button
-                type="button"
-                whileTap={{ rotateX: -22, opacity: 0.95 }}
-                transition={{ type: "spring", stiffness: 440, damping: 28 }}
-                onClick={() => {
-                  safeVibrate(15);
-                  router.push(
-                    `/book/${bookId}/chapter/${chapterIndex + 1}/cover`,
-                  );
-                }}
-                className="perspective-mid preserve-3d w-full origin-bottom rounded-[1.05rem] bg-primary py-[1.15rem] text-center shadow-[var(--shadow-elevation-3)]"
-              >
-                <span className="mx-auto flex max-w-[18rem] flex-col gap-1">
-                  <span className="text-[1.0625rem] font-semibold text-primary-foreground">
-                    {`第 ${chapterIndex + 1} 章 · 翻到下一页`}
-                  </span>
-                  <span className="text-[0.78rem] font-medium text-primary-foreground/88">
-                    本章结束 · 进入下一章
-                  </span>
-                </span>
-              </motion.button>
-            </motion.div>
-          ) : chapterEndVisible && chapterIndex === totalChapters - 1 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 26 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 18 }}
-              transition={{
-                type: "spring" as const,
-                stiffness: 320,
-                damping: 30,
-              }}
-              className="font-sans px-6 pb-[max(2rem,_env(safe-area-inset-bottom))] pt-4"
-            >
-              <motion.button
-                type="button"
-                whileTap={{ rotateX: -20, opacity: 0.95 }}
-                transition={{ type: "spring", stiffness: 440, damping: 28 }}
-                onClick={() => {
-                  safeVibrate(15);
-                  toFinished(bookId, { celebrate: true });
-                }}
-                className="perspective-mid preserve-3d w-full origin-bottom rounded-2xl bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-elevation-3)]"
-              >
-                读完了 · 查看庆祝页
-              </motion.button>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+            <AnimatePresence>
+              {chapterEndVisible && chapterIndex < totalChapters - 1 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 14 }}
+                  transition={{
+                    type: "spring" as const,
+                    stiffness: 320,
+                    damping: 30,
+                  }}
+                  className="font-sans mt-10 pb-6"
+                >
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.99, opacity: 0.95 }}
+                    transition={{ type: "spring", stiffness: 440, damping: 28 }}
+                    onClick={() => {
+                      safeVibrate(15);
+                      router.push(
+                        `/book/${bookId}/chapter/${chapterIndex + 1}/cover`,
+                      );
+                    }}
+                    className="w-full rounded-[1.05rem] bg-primary py-[1.15rem] text-center shadow-[var(--shadow-elevation-3)]"
+                  >
+                    <span className="mx-auto flex max-w-[18rem] flex-col gap-1">
+                      <span className="text-[1.0625rem] font-semibold text-primary-foreground">
+                        {`第 ${chapterIndex + 1} 章 · 进入下一章`}
+                      </span>
+                      <span className="text-[0.78rem] font-medium text-primary-foreground/88">
+                        本章结束
+                      </span>
+                    </span>
+                  </motion.button>
+                </motion.div>
+              ) : chapterEndVisible && chapterIndex === totalChapters - 1 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 14 }}
+                  transition={{
+                    type: "spring" as const,
+                    stiffness: 320,
+                    damping: 30,
+                  }}
+                  className="font-sans mt-10 pb-6"
+                >
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.99, opacity: 0.95 }}
+                    transition={{ type: "spring", stiffness: 440, damping: 28 }}
+                    onClick={() => {
+                      safeVibrate(15);
+                      toFinished(bookId, { celebrate: true });
+                    }}
+                    className="w-full rounded-2xl bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-elevation-3)]"
+                  >
+                    读完了 · 查看庆祝页
+                  </motion.button>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        </main>
       </div>
 
       {readingDisplayMode === "standard" && bubbleTurn ? (
@@ -964,7 +905,7 @@ export function ReaderShell({
       ) : null}
 
       {readingDisplayMode === "standard" ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[43] flex flex-col justify-end gap-10 px-5 pb-[max(2rem,calc(env(safe-area-inset-bottom)+2rem))] pt-6">
+        <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[43] mx-auto flex w-full max-w-[430px] flex-col justify-end gap-8 px-5 pt-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1.5rem))]">
           <div className="pointer-events-auto mx-auto w-full max-w-lg">
             <ReaderVoiceBubbles
               open={Boolean(bubbleTurn)}
@@ -994,7 +935,7 @@ export function ReaderShell({
               onCommitSend={() => void handleVoiceCommitted()}
             />
           </div>
-        </div>
+        </footer>
       ) : (
         <footer className="font-sans sticky bottom-0 z-30 border-t border-border/70 bg-background/82 backdrop-blur-lg">
           <ImmersiveReadChrome

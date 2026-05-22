@@ -619,29 +619,6 @@
     max-width: 100%;
   }
 
-  .reader-dropcap-first::first-letter {
-    float: left;
-    margin-top: 0.04em;
-    margin-right: 0.1em;
-    font-family: var(--font-serif-stack);
-    font-weight: 900;
-    line-height: 0.92;
-    color: var(--color-primary);
-    font-size: 3rem;
-    text-shadow:
-      0 1px 0 color-mix(in oklch, var(--color-primary) 16%, transparent);
-  }
-
-  @supports (-webkit-hyphens: none) {
-    .reader-dropcap-first::first-letter {
-      font-feature-settings:
-        "smcp" 0,
-        "onum" 1;
-      -webkit-hyphens: none;
-      hyphens: none;
-    }
-  }
-
   .reader-paragraph-divider-line {
     color: color-mix(in oklch, var(--color-primary) 45%, transparent);
     font-style: normal;
@@ -677,17 +654,28 @@
 
   .reader-paper-shell {
     background-color: var(--color-background);
-    background-image:
-      linear-gradient(
-        to bottom,
-        color-mix(in oklch, var(--surface-2) 22%, transparent) 0,
-        transparent 42%
-      ),
-      repeating-linear-gradient(
-        -12deg,
-        color-mix(in oklch, var(--foreground) 1.35%, transparent) 0 1px,
-        transparent 1px 9px
-      );
+    background-image: repeating-linear-gradient(
+      -12deg,
+      color-mix(in oklch, var(--foreground) 0.45%, transparent) 0 1px,
+      transparent 1px 11px
+    );
+  }
+
+  .reader-content {
+    width: 100%;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reader-content .reader-mixed-prose {
+    width: 100%;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    font-size: inherit;
+    line-height: 1.85;
+    margin-bottom: 1.4em;
+    text-align: justify;
   }
 
   .home-bookshelf-pane {

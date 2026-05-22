@@ -41,7 +41,7 @@ export default async function ReaderPage({
   }
 
   return (
-    <MobileContainer className="overflow-hidden">
+    <MobileContainer className="flex min-h-0 flex-1 flex-col overflow-x-hidden">
       <ReaderShell
         bookId={bookId}
         bookMeta={bookMeta}
