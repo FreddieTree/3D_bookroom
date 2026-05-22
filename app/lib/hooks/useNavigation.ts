@@ -64,6 +64,8 @@ export function useNavigation() {
         replace?: boolean;
         /** 正文序列中的零基索引（与其它 body、API chapters 对齐） */
         chapter?: number | null;
+        /** 段落 id；阅读器优先用 ?p= 定位章节与滚动位置 */
+        p?: string | null;
         fromCover?: boolean;
       },
     ) => {
@@ -75,6 +77,8 @@ export function useNavigation() {
       ) {
         params.set("chapter", String(Math.floor(opts.chapter)));
       }
+      const para = opts?.p?.trim();
+      if (para) params.set("p", para);
       if (opts?.fromCover) params.set("fromCover", "1");
       const q = params.toString() ? `?${params}` : "";
 

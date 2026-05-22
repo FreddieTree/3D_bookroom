@@ -72,7 +72,7 @@ export function ReaderTopChrome({
 
   return (
     <motion.div
-      className="pointer-events-none absolute inset-x-0 top-0 z-40 overflow-hidden font-sans"
+      className="pointer-events-none fixed inset-x-0 top-0 z-40 mx-auto w-full max-w-[430px] overflow-hidden pt-[env(safe-area-inset-top)] font-sans"
       initial={false}
       animate={{
         y:

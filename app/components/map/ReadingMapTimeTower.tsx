@@ -9,6 +9,7 @@ import {
 } from "framer-motion";
 import {
   Bookmark,
+  BookOpen,
   Image as ImageIcon,
   Lock,
   MessageCircle,
@@ -37,6 +38,12 @@ function orbIcon(type: MapNode["type"]) {
         <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_16px_color-mix(in_oklch,var(--primary)_55%,transparent)]">
           <span className="absolute inset-0 animate-ping rounded-full bg-primary/38" />
           <span className="relative text-[0.58rem] font-bold">读</span>
+        </span>
+      );
+    case "chapter":
+      return (
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-500/22 text-zinc-200 ring-1 ring-white/10">
+          <BookOpen className="size-[0.95rem]" strokeWidth={1.75} />
         </span>
       );
     case "image":

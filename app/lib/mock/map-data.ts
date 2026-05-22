@@ -4,6 +4,7 @@
 
 export type MapNodeType =
   | "current"
+  | "chapter"
   | "image"
   | "dialogue"
   | "character"
@@ -409,6 +410,7 @@ export function getMapNodesForBook(
 export type MapFilterTab = "all" | "dialogue" | "image" | "character" | "pending";
 
 export function mapTabMatchesNode(tab: MapFilterTab, node: MapNode): boolean {
+  if (node.type === "chapter" || node.type === "current") return tab === "all";
   if (tab === "all") return true;
   return node.type === tab;
 }

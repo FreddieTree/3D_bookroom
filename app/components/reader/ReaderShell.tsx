@@ -677,6 +677,25 @@ export function ReaderShell({
           readerDeepFocus ? "opacity-[0.94]" : "opacity-0",
         )}
       />
+
+      <ReaderTopChrome
+        bookId={bookId}
+        chapterIndex={chapterIndex}
+        bookTitle={book.title}
+        chapterTitle={chapterHeadline}
+        progressPct={mergedProgressPct}
+        headerVisible={headerVisible}
+        pagerBlurBoost={false}
+        deepReadingHidden={
+          readerDeepFocus || readingDisplayMode === "immersive"
+        }
+        pendingQuestionsCount={pendingQuestions.length}
+        readingDisplayMode={readingDisplayMode}
+        onMap={() => toMap(bookId)}
+        onSettings={() => setReadingSettingsOpen(true)}
+        onReleasePending={() => releasePending()}
+      />
+
       <motion.div
         className="relative flex min-h-dvh flex-col"
         initial={false}
@@ -699,29 +718,13 @@ export function ReaderShell({
       >
         <ReadingProgressBackgroundSync bookId={bookId} />
 
-        <ReaderTopChrome
-          bookId={bookId}
-          chapterIndex={chapterIndex}
-          bookTitle={book.title}
-          chapterTitle={chapterHeadline}
-          progressPct={mergedProgressPct}
-          headerVisible={headerVisible}
-          pagerBlurBoost={false}
-          deepReadingHidden={
-            readerDeepFocus || readingDisplayMode === "immersive"
-          }
-          pendingQuestionsCount={pendingQuestions.length}
-          readingDisplayMode={readingDisplayMode}
-          onMap={() => toMap(bookId)}
-          onSettings={() => setReadingSettingsOpen(true)}
-          onReleasePending={() => releasePending()}
-        />
-
       <div
         className={cn(
           "flex min-h-0 flex-1 flex-col overflow-hidden",
-          readingDisplayMode === "immersive" && "pt-10",
-          readingDisplayMode === "standard" && "pt-[10rem]",
+          readingDisplayMode === "immersive" &&
+            "pt-[calc(2.5rem+env(safe-area-inset-top))]",
+          readingDisplayMode === "standard" &&
+            "pt-[calc(10rem+env(safe-area-inset-top))]",
         )}
         onTouchStart={(e) => {
           const t = e.touches[0];

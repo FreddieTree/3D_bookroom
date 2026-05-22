@@ -76,7 +76,7 @@ export function ChapterCoverExperience({
   };
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[#060608] text-zinc-50">
+    <div className="relative flex min-h-dvh flex-1 flex-col overflow-x-hidden bg-[#060608] text-zinc-50">
       <motion.div
         className="pointer-events-none absolute inset-0"
         initial={{ opacity: 1 }}
@@ -87,12 +87,12 @@ export function ChapterCoverExperience({
         }}
       />
 
-      <div className="relative z-10 flex flex-1 flex-col px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]">
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full min-w-0 max-w-[430px] flex-1 flex-col justify-center px-[max(1.25rem,env(safe-area-inset-left))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))]">
         <p className="text-center text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-500">
           Chapter
         </p>
         <motion.p
-          className="mt-4 text-center font-serif text-[4.25rem] font-semibold leading-none tracking-tight text-zinc-100"
+          className="mt-4 text-center font-serif text-[clamp(3rem,18vw,4.25rem)] font-semibold leading-none tracking-tight text-zinc-100"
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: leaving ? 0 : 1, y: leaving ? -16 : 0 }}
           transition={{ type: "spring", stiffness: 280, damping: 28 }}
@@ -114,7 +114,7 @@ export function ChapterCoverExperience({
           {meta.tagline}
         </motion.p>
 
-        <div className="flex-1" />
+        <div className="min-h-[min(4rem,8dvh)] flex-1 shrink" />
 
         <AnimatePresence>
           {needsUnlock ? (

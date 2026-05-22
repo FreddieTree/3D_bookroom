@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bookmark,
+  BookOpen,
   ChevronLeft,
   Image as ImageIcon,
   Lock,
@@ -23,6 +24,10 @@ import {
   type MapFilterTab,
   type MapNode,
 } from "@/app/lib/mock/map-data";
+import {
+  buildResolvedMapNodes,
+  resolveMapJumpTarget,
+} from "@/app/lib/map/resolve-map-nodes";
 import { fetchMergedBookChapters } from "@/app/lib/reader/fetch-merged-book-chapters";
 import type { ChapterContent } from "@/app/lib/data/sample-content";
 import { getChaptersForBook } from "@/app/lib/data/sample-content";
@@ -51,6 +56,12 @@ function nodeIcon(type: MapNode["type"]) {
         <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
           <span className="absolute inset-0 animate-ping rounded-full bg-primary/40" />
           <span className="relative text-[0.65rem] font-bold">读</span>
+        </span>
+      );
+    case "chapter":
+      return (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-500/20 text-zinc-200 ring-1 ring-white/12">
+          <BookOpen className="size-[1.05rem]" strokeWidth={1.75} />
         </span>
       );
     case "image":
@@ -100,17 +111,6 @@ type ReadingMapViewProps = {
 
 export function ReadingMapView({ bookId }: ReadingMapViewProps) {
   const { back, toRead } = useNavigation();
-  const jumpToParagraph = useCallback(
-    (paragraphId: string, chapterIndex: number) => {
-      useReaderStore.getState().setReadingPosition(bookId, {
-        chapterIndex,
-        paragraphId,
-      });
-      toRead(bookId, { chapter: chapterIndex });
-    },
-    [bookId, toRead],
-  );
-
   const book = useBookMeta(bookId);
 
   const [tocFromApi, setTocFromApi] = useState<ChapterContent[] | null>(
@@ -128,11 +128,30 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
     };
   }, [bookId]);
 
+  const chaptersLoading = tocFromApi === null;
+
   const chapters = useMemo(() => {
-    if (tocFromApi === null) return getChaptersForBook(bookId) ?? [];
+    if (chaptersLoading) return [];
     if (tocFromApi.length > 0) return tocFromApi;
     return getChaptersForBook(bookId) ?? [];
-  }, [tocFromApi, bookId]);
+  }, [tocFromApi, bookId, chaptersLoading]);
+
+  const jumpToParagraph = useCallback(
+    (paragraphId: string, chapterIndex: number) => {
+      if (chapters.length === 0) {
+        toRead(bookId);
+        return;
+      }
+      const { chapterIndex: safeIdx, paragraphId: pid } =
+        resolveMapJumpTarget(chapters, paragraphId, chapterIndex);
+      useReaderStore.getState().setReadingPosition(bookId, {
+        chapterIndex: safeIdx,
+        paragraphId: pid,
+      });
+      toRead(bookId, { chapter: safeIdx, p: pid || undefined });
+    },
+    [bookId, chapters, toRead],
+  );
 
   const readerProgressByBook = useReaderStore((s) => s.progressByBook);
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
@@ -151,24 +170,35 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
     () => computeReadProgressPercentFlexible(bookId, progress),
     [bookId, progress],
   );
-  const currentCh = progress?.chapterIndex ?? 0;
+  const currentCh = useMemo(() => {
+    const raw = progress?.chapterIndex ?? 0;
+    if (chapters.length === 0) return 0;
+    return Math.min(Math.max(0, raw), chapters.length - 1);
+  }, [progress?.chapterIndex, chapters.length]);
 
-  const baseNodes = useMemo(
+  const rawMockNodes = useMemo(
     () => getMapNodesForBook(bookId, { chatMessages, pendingQuestions }),
     [bookId, chatMessages, pendingQuestions],
   );
-  const stats = useMemo(() => getLittlePrinceMapStats(baseNodes), [baseNodes]);
+
+  const baseNodes = useMemo(() => {
+    if (chapters.length === 0) return [];
+    return buildResolvedMapNodes(chapters, rawMockNodes);
+  }, [chapters, rawMockNodes]);
+
+  const stats = useMemo(
+    () => getLittlePrinceMapStats(baseNodes),
+    [baseNodes],
+  );
 
   const liveCurrent: MapNode | null = useMemo(() => {
     const pid = progress?.paragraphId;
-    if (pid == null || pid === "") return null;
+    if (pid == null || pid === "" || chapters.length === 0) return null;
+    const resolved = resolveMapJumpTarget(chapters, pid, currentCh);
     return {
       id: "map-live-current",
-      paragraphId: pid,
-      chapterIndex:
-        typeof progress?.chapterIndex === "number"
-          ? progress.chapterIndex
-          : 0,
+      paragraphId: resolved.paragraphId,
+      chapterIndex: resolved.chapterIndex,
       type: "current",
       timestamp: MAP_DEMO_NOW,
       payload: {
@@ -176,7 +206,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
         preview: "你离开地图时仍会停在这里；点按回到正文。",
       },
     };
-  }, [progress]);
+  }, [progress, chapters, currentCh]);
 
   const session = mapSessionByBook[bookId];
   const filterTab = session?.filterTab ?? "all";
@@ -257,7 +287,15 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
 
   const pendingCount = stats.pendingWaiting + pendingQuestions.length;
 
-  if (!book || baseNodes.length === 0) {
+  if (!book) {
+    return (
+      <div className="flex min-h-dvh flex-col bg-[#0c0c0f] px-5 pb-10 pt-4 text-zinc-100">
+        <p className="mt-12 text-center text-sm text-zinc-500">未找到书目</p>
+      </div>
+    );
+  }
+
+  if (!chaptersLoading && chapters.length === 0) {
     return (
       <div className="flex min-h-dvh flex-col bg-[#0c0c0f] px-5 pb-10 pt-4 text-zinc-100">
         <header className="flex items-center gap-2 py-2">
@@ -277,10 +315,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
           </h1>
         </header>
         <p className="mt-12 px-6 text-center text-sm text-zinc-500">
-          《{book?.title ?? "本书"}》暂时没有可展示的阅读地图 demo 节点；
-          {chapters.length > 0
-            ? " 仍可正常阅读并按章节回溯。"
-            : " 可先连接数据库并完成章节入库。"}
+          《{book.title}》暂无章节数据，可先连接数据库并完成章节入库。
         </p>
         <button
           type="button"
@@ -367,7 +402,11 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
               exit={{ opacity: 0.12, y: -6 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              {filtered.length === 0 ? (
+              {chaptersLoading ? (
+                <p className="py-16 text-center text-sm text-zinc-500">
+                  正在加载章节…
+                </p>
+              ) : filtered.length === 0 ? (
                 <p className="py-16 text-center text-sm text-zinc-500">
                   这一栏暂无节点
                 </p>

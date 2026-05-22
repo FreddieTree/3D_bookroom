@@ -19,7 +19,7 @@ export default async function ChapterCoverPage({ params }: CoverPageProps) {
   const resolvedTitle = chapters[idx]!.title;
 
   return (
-    <MobileContainer className="overflow-hidden !bg-[#060608] !shadow-none">
+    <MobileContainer className="flex min-h-dvh flex-1 flex-col overflow-x-hidden !bg-[#060608] !shadow-none">
       <ChapterCoverExperience
         bookId={bookId}
         chapterIndex={idx}
