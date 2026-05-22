@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
+import { Sparkles } from "lucide-react";
 
 import { cn } from "@/app/lib/utils";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
@@ -56,7 +57,7 @@ export function ReaderVoiceBubbles({
         <motion.div
           drag="x"
           dragElastic={0.18}
-          dragConstraints={{ left: -220, right: 96 }}
+          dragConstraints={{ left: -220, right: 0 }}
           onDragEnd={dragEnd}
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
@@ -66,139 +67,95 @@ export function ReaderVoiceBubbles({
             stiffness: 380,
             damping: 30,
           }}
-          className="pointer-events-auto z-[52] mx-4 rounded-[1.35rem] border border-white/14 p-[0.72rem] shadow-[var(--shadow-elevation-4)]"
+          className={cn(
+            "pointer-events-auto z-[52] mx-4 rounded-[1.35rem] border border-border/40 p-[0.72rem]",
+            "shadow-[var(--shadow-elevation-4)]",
+          )}
           style={{
-            perspective: 1080,
             background:
-              "color-mix(in oklch, var(--surface-1) 78%, transparent)",
+              "color-mix(in oklch, var(--surface-1) 92%, var(--color-background))",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
           }}
           role="log"
           aria-live="polite"
         >
-          <div className="perspective-mid preserve-3d space-y-3">
-            {/* User */}
+          <div className="space-y-3">
             <div className="flex justify-end gap-2.5">
               <motion.div
-                className="preserve-3d max-w-[90%]"
-                initial={{ opacity: 0.02, y: 18, rotateX: 14, rotateY: -8 }}
-                animate={{ opacity: 1, y: 0, rotateX: 4, rotateY: -5 }}
+                className="max-w-[90%]"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{
                   type: "spring",
                   stiffness: 420,
                   damping: 31,
                 }}
-                style={{
-                  perspective: 940,
-                  transformStyle: "preserve-3d",
-                }}
               >
-                <motion.div
-                  layout
+                <div
                   className={cn(
                     "rounded-2xl rounded-br-md px-3.5 py-2.5 font-sans text-[0.9rem] leading-relaxed",
-                    "bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground",
-                    "shadow-[0_10px_38px_-16px_color-mix(in_oklch,var(--color-primary)_82%,transparent),inset_0_1px_0_oklch(1_0_0_/_14%)]",
+                    "bg-gradient-to-br from-primary via-primary to-brand-600 text-primary-foreground",
+                    "shadow-[0_8px_28px_-14px_color-mix(in_oklch,var(--color-primary)_70%,transparent)]",
                   )}
-                  animate={{ rotateY: [-5, -3.8, -4.8] }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 5.8,
-                    ease: "easeInOut",
-                  }}
                 >
                   {userText}
-                </motion.div>
+                </div>
               </motion.div>
-              <motion.span
+              <span
                 aria-hidden
                 className={cn(
-                  "mt-0.5 grid size-[2rem] shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-accent shadow-md ring-2 ring-background/42",
-                  "text-[10px] font-bold text-white",
+                  "mt-0.5 grid size-[2rem] shrink-0 place-items-center rounded-full bg-primary",
+                  "text-[10px] font-bold text-primary-foreground shadow-sm ring-2 ring-background/50",
                 )}
-                animate={{ rotateY: [0, -8, 0], scale: [1, 1.04, 1] }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 8,
-                  ease: "easeInOut",
-                }}
               >
                 我
-              </motion.span>
+              </span>
             </div>
 
-            {/* AI */}
             <div className="flex justify-start gap-2.5">
-              <motion.span
+              <span
                 aria-hidden
                 className={cn(
-                  "mt-0.5 grid size-[2rem] shrink-0 place-items-center rounded-full bg-white/22 text-[11px] font-semibold uppercase tracking-[0.05em]",
-                  "text-slate-100 ring-2 ring-white/38 dark:bg-black/52",
-                  aiStreaming ? "" : "opacity-[0.86]",
+                  "mt-0.5 grid size-[2rem] shrink-0 place-items-center rounded-full",
+                  "bg-[var(--surface-2)] text-primary ring-2 ring-border/60",
+                  aiStreaming && "animate-pulse",
                 )}
-                animate={
-                  aiStreaming
-                    ? { scale: [1, 1.08, 1], opacity: [0.9, 1, 0.9] }
-                    : { opacity: [0.9, 0.98], scale: [1, 1.02, 1] }
-                }
-                transition={
-                  aiStreaming
-                    ? { repeat: Infinity, duration: 1.08, ease: "easeInOut" }
-                    : { duration: 0.52, repeat: 0 }
-                }
               >
-                ai
-              </motion.span>
+                <Sparkles className="size-4" strokeWidth={1.75} aria-hidden />
+              </span>
 
               <motion.div
-                className="preserve-3d relative max-w-[90%]"
-                initial={{ opacity: 0, y: 18, rotateX: 14, rotateY: 7 }}
-                animate={{ opacity: 1, y: 6, rotateX: 8, rotateY: 4 }}
+                className="relative max-w-[90%]"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                style={{ perspective: 920, transformStyle: "preserve-3d" }}
               >
-                {/* Gold shimmer when streaming finishes */}
                 <AnimatePresence>
                   {goldBurst > 0 ? (
                     <motion.span
                       key={goldBurst}
                       aria-hidden
-                      className="pointer-events-none absolute -inset-1 z-0 rounded-2xl bg-gradient-to-r from-amber-300/82 via-accent/92 to-primary/66 mix-blend-screen"
-                      initial={{ opacity: 0.92, scale: 0.92 }}
-                      animate={{ opacity: 0, scale: 1.06 }}
+                      className="pointer-events-none absolute -inset-0.5 z-0 rounded-2xl bg-gradient-to-r from-amber-200/45 via-amber-300/35 to-primary/25"
+                      initial={{ opacity: 0.55, scale: 0.96 }}
+                      animate={{ opacity: 0, scale: 1.03 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
                     />
                   ) : null}
                 </AnimatePresence>
 
-                <motion.div
-                  layout
+                <div
                   className={cn(
-                    "relative z-[1] rounded-2xl rounded-bl-md px-3.5 py-2.5 font-sans text-[0.9rem] leading-relaxed backdrop-blur-sm",
-                    "border border-white/26 bg-[color-mix(in_oklch,var(--surface-2)_84%,transparent)] text-foreground",
-                    "shadow-[inset_0_1px_0_oklch(1_0_0_/_08%),0_14px_40px_-18px_oklch(0_0_0_/_0.45)] dark:border-white/10",
+                    "relative z-[1] rounded-2xl rounded-bl-md px-3.5 py-2.5 font-sans text-[0.9rem] leading-relaxed",
+                    "border border-border/80 bg-[var(--surface-1)] text-foreground",
+                    "shadow-[0_6px_24px_-12px_oklch(0_0_0_/_0.18)]",
+                    "dark:border-border/60 dark:bg-[var(--surface-2)]",
                   )}
-                  animate={{
-                    rotateY:
-                      aiStreaming && aiText.length === 0
-                        ? [-2.4, -1.8, -2]
-                        : [3.8, 2.6, 3.8],
-                  }}
-                  transition={
-                    aiStreaming && aiText.length === 0
-                      ? {
-                          repeat: Infinity,
-                          duration: 3.15,
-                          ease: "easeInOut",
-                        }
-                      : { duration: 0.45, repeat: 0 }
-                  }
                 >
                   <span>{aiText}</span>
                   {aiStreaming ? <ThinkingCursor /> : null}
-                </motion.div>
+                </div>
               </motion.div>
             </div>
 

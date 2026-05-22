@@ -892,60 +892,6 @@ export function ReaderShell({
         </main>
       </div>
 
-      {readingDisplayMode === "standard" && bubbleTurn ? (
-        <button
-          type="button"
-          aria-label="关闭语音气泡"
-          className="fixed inset-x-0 bottom-[15rem] top-0 z-[41] bg-black/[0.12] backdrop-blur-[2px]"
-          onClick={() => {
-            safeVibrate(6);
-            setBubbleTurn(null);
-          }}
-        />
-      ) : null}
-
-      {readingDisplayMode === "standard" ? (
-        <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[43] mx-auto flex w-full max-w-[430px] flex-col justify-end gap-8 px-5 pt-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1.5rem))]">
-          <div className="pointer-events-auto mx-auto w-full max-w-lg">
-            <ReaderVoiceBubbles
-              open={Boolean(bubbleTurn)}
-              userText={bubbleTurn?.userText ?? ""}
-              aiText={bubbleTurn?.aiText ?? ""}
-              aiStreaming={bubbleTurn?.streaming}
-              onDismissSwipe={() => setBubbleTurn(null)}
-            />
-          </div>
-
-          <div className="pointer-events-auto mx-auto w-full max-w-xl">
-            <ReaderBgmStrip bookId={bookId} chapterIndex={chapterIndex} />
-          </div>
-
-          <div className="pointer-events-auto mx-auto flex w-full justify-center">
-            <ReaderFloatingMic
-              processing={micProcessing}
-              deepFocusGhost={readerDeepFocus}
-              hasCompletedBubble={Boolean(
-                bubbleTurn &&
-                  !bubbleTurn.streaming &&
-                  bubbleTurn.aiText.length > 12,
-              )}
-              onRoundBegin={() => {
-                setBubbleTurn(null);
-              }}
-              onCommitSend={() => void handleVoiceCommitted()}
-            />
-          </div>
-        </footer>
-      ) : (
-        <footer className="font-sans sticky bottom-0 z-30 border-t border-border/70 bg-background/82 backdrop-blur-lg">
-          <ImmersiveReadChrome
-            chapterProgressPct={progPctImm}
-            immersivePlaying={immersivePlaying}
-            onTogglePlaying={() => setImmersivePlaying((v) => !v)}
-          />
-        </footer>
-      )}
-
       <AnimatePresence>
         {menu ? (
           <>
@@ -1025,6 +971,60 @@ export function ReaderShell({
       </AnimatePresence>
 
       </motion.div>
+
+      {readingDisplayMode === "standard" && bubbleTurn ? (
+        <button
+          type="button"
+          aria-label="关闭语音气泡"
+          className="fixed inset-x-0 bottom-[15rem] top-0 z-[41] bg-black/[0.12] backdrop-blur-[2px]"
+          onClick={() => {
+            safeVibrate(6);
+            setBubbleTurn(null);
+          }}
+        />
+      ) : null}
+
+      {readingDisplayMode === "standard" ? (
+        <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[43] mx-auto flex w-full max-w-[430px] flex-col justify-end gap-8 px-5 pt-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1.5rem))]">
+          <div className="pointer-events-auto mx-auto w-full max-w-lg">
+            <ReaderVoiceBubbles
+              open={Boolean(bubbleTurn)}
+              userText={bubbleTurn?.userText ?? ""}
+              aiText={bubbleTurn?.aiText ?? ""}
+              aiStreaming={bubbleTurn?.streaming}
+              onDismissSwipe={() => setBubbleTurn(null)}
+            />
+          </div>
+
+          <div className="pointer-events-auto mx-auto w-full max-w-xl">
+            <ReaderBgmStrip bookId={bookId} chapterIndex={chapterIndex} />
+          </div>
+
+          <div className="pointer-events-auto mx-auto flex w-full justify-center">
+            <ReaderFloatingMic
+              processing={micProcessing}
+              deepFocusGhost={readerDeepFocus}
+              hasCompletedBubble={Boolean(
+                bubbleTurn &&
+                  !bubbleTurn.streaming &&
+                  bubbleTurn.aiText.length > 12,
+              )}
+              onRoundBegin={() => {
+                setBubbleTurn(null);
+              }}
+              onCommitSend={() => void handleVoiceCommitted()}
+            />
+          </div>
+        </footer>
+      ) : (
+        <footer className="font-sans fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px] border-t border-border/70 bg-background/82 backdrop-blur-lg pb-[max(env(safe-area-inset-bottom),0px)]">
+          <ImmersiveReadChrome
+            chapterProgressPct={progPctImm}
+            immersivePlaying={immersivePlaying}
+            onTogglePlaying={() => setImmersivePlaying((v) => !v)}
+          />
+        </footer>
+      )}
 
       <ChatDrawer
         bookTitle={book.title}
