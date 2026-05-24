@@ -1,0 +1,790 @@
+@import "tailwindcss";
+
+/* —— Animated custom properties —— */
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --shadow-intensity {
+  syntax: "<number>";
+  initial-value: 0;
+  inherits: false;
+}
+
+@property --tilt-x {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --tilt-y {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Design System v2 — OKLCH / 纸张空间 / 物理阴影（与旧 token 别名兼容）
+═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  color-scheme: light;
+
+  /* Brand · 温暖琥珀（原始 token；Tailwind `bg-brand-500` 通过 @theme 映射） */
+  --brand-50: oklch(0.97 0.02 60);
+  --brand-100: oklch(0.94 0.04 60);
+  --brand-200: oklch(0.88 0.08 58);
+  --brand-300: oklch(0.8 0.13 55);
+  --brand-400: oklch(0.7 0.16 52);
+  --brand-500: oklch(0.62 0.18 48);
+  --brand-600: oklch(0.54 0.17 45);
+  --brand-700: oklch(0.45 0.14 42);
+  --brand-800: oklch(0.36 0.1 40);
+  --brand-900: oklch(0.28 0.07 38);
+
+  /* Surfaces · 纸张 10 级（0 最亮）— raw tokens */
+  --paper-0: oklch(0.985 0.008 70);
+  --paper-1: oklch(0.97 0.012 70);
+  --paper-2: oklch(0.94 0.015 68);
+  --paper-3: oklch(0.9 0.018 65);
+  --paper-4: oklch(0.84 0.02 62);
+  --paper-5: oklch(0.74 0.025 58);
+
+  /* 暗模式表面 raw（由 .theme-dark / .dark 覆盖层使用） */
+  --paper-dark-0: oklch(0.12 0.012 65);
+  --paper-dark-1: oklch(0.16 0.015 65);
+  --paper-dark-2: oklch(0.2 0.018 65);
+  --paper-dark-3: oklch(0.25 0.02 65);
+
+  /* AI · 悬念 */
+  --ai-500: oklch(0.55 0.12 165);
+  --ai-600: oklch(0.45 0.13 165);
+  --pending-500: oklch(0.72 0.16 75);
+
+  /* Typography colors */
+  --text-primary: oklch(0.22 0.018 50);
+  --text-secondary: oklch(0.45 0.015 50);
+  --text-tertiary: oklch(0.6 0.012 50);
+  --text-on-brand: oklch(0.98 0.005 70);
+
+  /* —— Legacy surface scale（旧组件仍引用 surface-1…5） —— */
+  --surface-0: var(--paper-0);
+  --surface-1: var(--paper-1);
+  --surface-2: var(--paper-2);
+  --surface-3: var(--paper-3);
+  --surface-4: var(--paper-4);
+  --surface-5: var(--paper-5);
+
+  /* Semantic UI（shadcn / Tailwind bridge） */
+  --background: var(--paper-0);
+  --foreground: var(--text-primary);
+  --primary: var(--brand-500);
+  --primary-foreground: var(--text-on-brand);
+  --accent: var(--ai-600);
+  --accent-foreground: oklch(0.985 0.005 165);
+  --destructive: oklch(0.52 0.19 27);
+  --destructive-foreground: var(--text-on-brand);
+  --muted: color-mix(in oklch, var(--text-primary) 6%, var(--paper-0));
+  --muted-foreground: color-mix(in oklch, var(--text-secondary) 88%, transparent);
+  --frame: oklch(0.13 0.012 52);
+  --border: color-mix(in oklch, var(--text-primary) 9%, var(--paper-0));
+  --ring: var(--brand-500);
+
+  /* —— Physics shadows —— */
+  --shadow-ambient-1:
+    0 1px 1px oklch(0 0 0 / 0.04),
+    0 2px 4px oklch(0 0 0 / 0.06);
+
+  --shadow-ambient-2:
+    0 2px 3px oklch(0 0 0 / 0.05),
+    0 6px 12px oklch(0 0 0 / 0.08),
+    0 12px 24px oklch(0 0 0 / 0.06);
+
+  --shadow-ambient-3:
+    0 4px 6px oklch(0 0 0 / 0.06),
+    0 12px 20px oklch(0 0 0 / 0.1),
+    0 24px 40px oklch(0 0 0 / 0.08);
+
+  --shadow-ambient-4:
+    0 8px 12px oklch(0 0 0 / 0.08),
+    0 20px 32px oklch(0 0 0 / 0.12),
+    0 40px 64px oklch(0 0 0 / 0.1);
+
+  --shadow-direct-light:
+    -8px 0 24px oklch(0.65 0.18 48 / 0.15),
+    8px 0 16px oklch(0 0 0 / 0.12);
+
+  --shadow-book-cover:
+    -6px 0 0 oklch(0.45 0.08 40),
+    -8px 4px 12px oklch(0 0 0 / 0.25),
+    -2px 8px 20px oklch(0 0 0 / 0.18);
+
+  --shadow-inset-pressed:
+    inset 0 2px 4px oklch(0 0 0 / 0.15),
+    inset 0 -1px 2px oklch(1 0 0 / 0.05);
+
+  --shadow-glass:
+    0 8px 32px oklch(0 0 0 / 0.12),
+    inset 0 1px 0 oklch(1 0 0 / 0.2),
+    inset 0 -1px 0 oklch(0 0 0 / 0.05);
+
+  /* Legacy elevation → ambient（保持类名不破） */
+  --shadow-elevation-1: var(--shadow-ambient-1);
+  --shadow-elevation-2: var(--shadow-ambient-2);
+  --shadow-elevation-3: var(--shadow-ambient-3);
+  --shadow-elevation-4: var(--shadow-ambient-4);
+
+  --shadow-soft:
+    var(--shadow-ambient-3),
+    0 28px 64px -32px oklch(0.35 0.04 50 / 0.12);
+
+  --shadow-book: var(--shadow-book-cover);
+
+  /* Z-index · perspective */
+  --z-base: 0;
+  --z-content: 10;
+  --z-card: 20;
+  --z-card-hover: 30;
+  --z-floating: 40;
+  --z-nav: 60;
+  --z-overlay: 80;
+  --z-modal: 100;
+  --z-toast: 120;
+
+  --perspective-near-value: 600px;
+  --perspective-mid-value: 1200px;
+  --perspective-far-value: 2400px;
+  --perspective-environment-value: 4800px;
+
+  /* Fonts：由 layout.tsx (next/font) 写入下列变量 */
+  --font-serif-stack: var(--font-serif-zh), var(--font-serif), ui-serif,
+    serif;
+  --font-sans-stack: var(--font-sans), var(--font-noto-sans-sc),
+    ui-sans-serif, system-ui, sans-serif;
+  --font-mono-stack: var(--font-mono), ui-monospace, monospace;
+}
+
+/* —— Dark（系统偏好 + theme-dark / .dark） —— */
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light) {
+    color-scheme: dark;
+
+    --surface-0: var(--paper-dark-0);
+    --surface-1: var(--paper-dark-1);
+    --surface-2: var(--paper-dark-2);
+    --surface-3: var(--paper-dark-3);
+    --surface-4: color-mix(in oklch, var(--paper-dark-3) 85%, white 15%);
+    --surface-5: color-mix(in oklch, var(--brand-700) 35%, var(--paper-dark-3));
+
+    --paper-0: var(--surface-0);
+    --paper-1: var(--surface-1);
+    --paper-2: var(--surface-2);
+    --paper-3: var(--surface-3);
+    --paper-4: var(--surface-4);
+    --paper-5: var(--surface-5);
+
+    --background: var(--paper-dark-0);
+    --foreground: oklch(0.92 0.012 62);
+    --text-primary: var(--foreground);
+    --text-secondary: oklch(0.74 0.012 62);
+    --text-tertiary: oklch(0.58 0.01 62);
+
+    --primary: color-mix(
+      in oklch,
+      var(--brand-400) 72%,
+      var(--foreground) 28%
+    );
+    --primary-foreground: oklch(0.13 0.012 62);
+    --accent: color-mix(
+      in oklch,
+      var(--ai-500) 88%,
+      var(--foreground) 12%
+    );
+    --accent-foreground: oklch(0.96 0.01 165);
+    --destructive: oklch(0.58 0.18 27);
+    --destructive-foreground: oklch(0.985 0.005 70);
+    --muted: color-mix(in oklch, var(--foreground) 10%, var(--paper-dark-0));
+    --muted-foreground: color-mix(
+      in oklch,
+      var(--foreground) 62%,
+      transparent
+    );
+    --frame: oklch(0.06 0.008 62);
+    --border: color-mix(in oklch, var(--foreground) 14%, var(--paper-dark-0));
+    --ring: color-mix(in oklch, var(--brand-400) 78%, white 22%);
+
+    --shadow-soft:
+      var(--shadow-ambient-4),
+      0 32px 80px -40px oklch(0 0 0 / 0.55);
+
+    --shadow-direct-light:
+      -8px 0 28px oklch(0.55 0.15 48 / 0.22),
+      8px 0 20px oklch(0 0 0 / 0.35);
+  }
+}
+
+:root.theme-dark,
+.dark {
+  color-scheme: dark;
+
+  --surface-0: var(--paper-dark-0);
+  --surface-1: var(--paper-dark-1);
+  --surface-2: var(--paper-dark-2);
+  --surface-3: var(--paper-dark-3);
+  --surface-4: color-mix(in oklch, var(--paper-dark-3) 85%, white 15%);
+  --surface-5: color-mix(in oklch, var(--brand-700) 35%, var(--paper-dark-3));
+
+  --paper-0: var(--surface-0);
+  --paper-1: var(--surface-1);
+  --paper-2: var(--surface-2);
+  --paper-3: var(--surface-3);
+  --paper-4: var(--surface-4);
+  --paper-5: var(--surface-5);
+
+  --background: var(--paper-dark-0);
+  --foreground: oklch(0.92 0.012 62);
+  --text-primary: var(--foreground);
+  --text-secondary: oklch(0.74 0.012 62);
+  --text-tertiary: oklch(0.58 0.01 62);
+
+  --primary: color-mix(
+    in oklch,
+    var(--brand-400) 72%,
+    var(--foreground) 28%
+  );
+  --primary-foreground: oklch(0.13 0.012 62);
+  --accent: color-mix(in oklch, var(--ai-500) 88%, var(--foreground) 12%);
+  --accent-foreground: oklch(0.96 0.01 165);
+  --destructive: oklch(0.58 0.18 27);
+  --destructive-foreground: oklch(0.985 0.005 70);
+  --muted: color-mix(in oklch, var(--foreground) 10%, var(--paper-dark-0));
+  --muted-foreground: color-mix(in oklch, var(--foreground) 62%, transparent);
+  --frame: oklch(0.06 0.008 62);
+  --border: color-mix(in oklch, var(--foreground) 14%, var(--paper-dark-0));
+  --ring: color-mix(in oklch, var(--brand-400) 78%, white 22%);
+
+  --shadow-soft:
+    var(--shadow-ambient-4),
+    0 32px 80px -40px oklch(0 0 0 / 0.55);
+
+  --shadow-direct-light:
+    -8px 0 28px oklch(0.55 0.15 48 / 0.22),
+    8px 0 20px oklch(0 0 0 / 0.35);
+
+  --shadow-glass:
+    0 8px 32px oklch(0 0 0 / 0.38),
+    inset 0 1px 0 oklch(1 0 0 / 0.08),
+    inset 0 -1px 0 oklch(0 0 0 / 0.25);
+}
+
+/* 显式浅色（覆盖系统暗色） */
+:root.theme-light {
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-frame: var(--frame);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--color-brand-800);
+  --color-brand-900: var(--color-brand-900);
+
+  --color-ai-500: var(--ai-500);
+  --color-ai-600: var(--color-ai-600);
+  --color-pending-500: var(--color-pending-500);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-on-brand: var(--text-on-brand);
+
+  --shadow-soft: var(--shadow-soft);
+
+  --font-sans: var(--font-sans-stack);
+  --font-serif: var(--font-serif-stack);
+  --font-mono: var(--font-mono-stack);
+
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans-stack);
+    width: 100%;
+    max-width: 100%;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  .font-serif-zh {
+    font-family: var(--font-serif-zh), var(--font-serif), ui-serif, serif;
+  }
+
+  .font-serif-en {
+    font-family: var(--font-serif), ui-serif, serif;
+  }
+
+  .font-sans-ui {
+    font-family: var(--font-sans-stack);
+  }
+
+  .font-mono-nums {
+    font-family: var(--font-mono-stack);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-content {
+    font-feature-settings: "palt" 1, "kern" 1;
+  }
+
+  .text-content > p:first-of-type::first-letter {
+    font-family: var(--font-serif-zh), var(--font-serif), serif;
+    font-size: 3.2em;
+    float: left;
+    line-height: 1;
+    margin-right: 0.08em;
+    margin-top: 0.1em;
+    color: var(--brand-600);
+    font-weight: 600;
+  }
+
+  /* —— Materials —— */
+  .material-paper {
+    background: var(--surface-0);
+    background-image:
+      radial-gradient(
+        at 20% 30%,
+        oklch(0.96 0.015 70 / 0.5),
+        transparent 50%
+      ),
+      radial-gradient(
+        at 80% 70%,
+        oklch(0.94 0.018 65 / 0.4),
+        transparent 50%
+      );
+    box-shadow: var(--shadow-ambient-2);
+  }
+
+  .material-glass {
+    background: oklch(1 0 0 / 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid oklch(1 0 0 / 0.3);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .material-glass-dark {
+    background: oklch(0.15 0.01 65 / 0.7);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid oklch(1 0 0 / 0.08);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .material-emboss {
+    background: linear-gradient(
+      135deg,
+      var(--surface-2),
+      var(--surface-3)
+    );
+    box-shadow:
+      inset 1px 1px 0 oklch(1 0 0 / 0.15),
+      inset -1px -1px 0 oklch(0 0 0 / 0.08),
+      var(--shadow-ambient-1);
+  }
+
+  .material-wood {
+    background:
+      linear-gradient(
+        90deg,
+        oklch(0.3 0.04 45) 0%,
+        oklch(0.32 0.05 45) 25%,
+        oklch(0.28 0.04 42) 50%,
+        oklch(0.31 0.05 45) 75%,
+        oklch(0.29 0.04 45) 100%
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        oklch(0 0 0 / 0.04) 3px,
+        oklch(0 0 0 / 0.04) 4px
+      );
+  }
+
+  /* 微噪点：叠在卡片 / Modal 上使用 `.texture-noise` */
+  .texture-noise {
+    position: relative;
+  }
+
+  .texture-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-image: url("data:image/svg+xml;utf8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    opacity: 0.04;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .study-room-gutter {
+    background-color: var(--color-frame);
+    background-image:
+      radial-gradient(
+        ellipse 90% 65% at 50% -25%,
+        color-mix(in oklch, var(--color-primary) 22%, transparent),
+        transparent 58%
+      ),
+      repeating-linear-gradient(
+        92deg,
+        transparent 0 6px,
+        oklch(0 0 0 / 0.18) 6px 7px,
+        transparent 7px 26px,
+        oklch(0 0 0 / 0.1) 26px 27px,
+        transparent 27px 54px
+      ),
+      linear-gradient(175deg, oklch(0.12 0.01 52) 0%, oklch(0.17 0.012 55) 52%, oklch(0.13 0.01 52) 100%);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not(.theme-light) .study-room-gutter {
+      background-image:
+        radial-gradient(
+          ellipse 95% 55% at 50% -18%,
+          color-mix(in oklch, var(--color-primary) 18%, transparent),
+          transparent 55%
+        ),
+        repeating-linear-gradient(
+          92deg,
+          transparent 0 8px,
+          oklch(0 0 0 / 0.42) 8px 9px,
+          transparent 9px 32px,
+          oklch(0 0 0 / 0.28) 32px 33px,
+          transparent 33px 60px
+        ),
+        linear-gradient(
+          172deg,
+          oklch(0.08 0.01 62) 0%,
+          oklch(0.12 0.012 62) 52%,
+          oklch(0.07 0.008 62) 100%
+        );
+    }
+  }
+
+  .dark .study-room-gutter,
+  :root.theme-dark .study-room-gutter {
+    background-image:
+      radial-gradient(
+        ellipse 95% 55% at 50% -18%,
+        color-mix(in oklch, var(--color-primary) 18%, transparent),
+        transparent 55%
+      ),
+      repeating-linear-gradient(
+        92deg,
+        transparent 0 8px,
+        oklch(0 0 0 / 0.42) 8px 9px,
+        transparent 9px 32px,
+        oklch(0 0 0 / 0.28) 32px 33px,
+        transparent 33px 60px
+      ),
+      linear-gradient(
+        172deg,
+        oklch(0.08 0.01 62) 0%,
+        oklch(0.12 0.012 62) 52%,
+        oklch(0.07 0.008 62) 100%
+      );
+  }
+
+  .shadow-book {
+    box-shadow: var(--shadow-book);
+  }
+
+  .perspective-near {
+    perspective: var(--perspective-near-value);
+  }
+
+  .perspective-mid {
+    perspective: var(--perspective-mid-value);
+  }
+
+  .perspective-far {
+    perspective: var(--perspective-far-value);
+  }
+
+  .perspective-environment {
+    perspective: var(--perspective-environment-value);
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .reader-paragraph-highlight {
+    background-color: color-mix(in oklch, var(--color-primary) 14%, transparent);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .reader-longpress-paragraph {
+    background-color: var(--surface-2);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    box-shadow:
+      0 0 0 2px color-mix(in oklch, var(--color-primary) 18%, transparent),
+      0 0 22px -6px color-mix(in oklch, var(--color-primary) 35%, transparent);
+  }
+
+  /** 正文选区 · 半透明主题底 + 实色文字 */
+  .reader-selection-scope ::selection {
+    background-color: color-mix(
+      in oklch,
+      var(--color-primary) 42%,
+      transparent
+    );
+    color: var(--color-foreground);
+  }
+
+  /** 中英文混排：标点比例、英文字距、tabular 数字 */
+  .reader-mixed-prose {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.035em;
+    word-spacing: 0.052em;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    max-width: 100%;
+    font-feature-settings:
+      "kern" 1,
+      "palt" 1,
+      "pwid" 0;
+    font-family: var(--font-serif-stack);
+  }
+
+  .reader-chapter-pane pre,
+  .reader-chapter-pane code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  .reader-paragraph-divider-line {
+    color: color-mix(in oklch, var(--color-primary) 45%, transparent);
+    font-style: normal;
+    letter-spacing: 0.5em;
+  }
+
+  .material-glass {
+    backdrop-filter: blur(18px);
+    background: color-mix(in oklch, var(--color-background) 72%, transparent);
+    box-shadow: var(--shadow-glass);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-border) 55%, transparent);
+  }
+
+  .material-glass-scroll {
+    backdrop-filter: blur(26px);
+  }
+
+  .material-glass-dark {
+    backdrop-filter: blur(22px);
+    background: color-mix(in oklch, var(--color-frame) 42%, transparent);
+    border-color: color-mix(in oklch, white 14%, transparent);
+    box-shadow: var(--shadow-ambient-3);
+  }
+
+  .reader-deep-vignette {
+    pointer-events: none;
+    background: radial-gradient(
+      farthest-corner,
+      transparent 54%,
+      oklch(0 0 0 / 0.33) 100%
+    );
+  }
+
+  .reader-paper-shell {
+    background-color: var(--color-background);
+    background-image: repeating-linear-gradient(
+      -12deg,
+      color-mix(in oklch, var(--foreground) 0.45%, transparent) 0 1px,
+      transparent 1px 11px
+    );
+  }
+
+  .reader-content {
+    width: 100%;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reader-content .reader-mixed-prose {
+    width: 100%;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    font-size: inherit;
+    line-height: 1.85;
+    margin-bottom: 1.4em;
+    text-align: justify;
+  }
+
+  .home-bookshelf-pane {
+    border-radius: 1.125rem;
+    background-color: color-mix(
+      in oklch,
+      oklch(0.38 0.04 72) 16%,
+      transparent
+    );
+    background-image:
+      linear-gradient(to bottom, oklch(0 0 0 / 0.42) 0, transparent 42%),
+      linear-gradient(oklch(1 0.002 95 / 0.05) 0 36px),
+      repeating-linear-gradient(
+        88deg,
+        transparent 0 9px,
+        oklch(0.22 0.02 62 / 0.13) 9px 10px,
+        transparent 10px 64px,
+        oklch(0.14 0.015 52 / 0.18) 64px 65px,
+        transparent 65px 128px,
+        oklch(0.35 0.03 62 / 0.12) 128px 130px,
+        transparent 130px 192px,
+        oklch(0.11 0.01 52 / 0.18) 192px 194px,
+        transparent 194px 100%
+      ),
+      linear-gradient(170deg, oklch(0.25 0.025 52) 0%, oklch(0.15 0.018 50) 72%);
+    border: 1px solid
+      color-mix(in oklch, var(--border) 60%, oklch(0.32 0.03 52 / 0.35));
+    box-shadow:
+      inset 0 28px 40px -32px oklch(0 0 0 / 0.55),
+      inset 0 -18px 32px -20px oklch(0 0 0 / 0.35),
+      0 6px 20px oklch(0.38 0.04 62 / 0.16),
+      var(--shadow-ambient-1);
+    box-sizing: border-box;
+  }
+
+  .dark .home-bookshelf-pane,
+  :root.theme-dark .home-bookshelf-pane {
+    border-color: oklch(0.62 0.02 72 / 0.22);
+    background-image:
+      linear-gradient(to bottom, oklch(0 0 0 / 0.72) 0, transparent 40%),
+      linear-gradient(oklch(0.98 0.005 92 / 0.03) 0 38px),
+      repeating-linear-gradient(
+        92deg,
+        transparent 0 10px,
+        oklch(0.54 0.015 82 / 0.14) 10px 11px,
+        transparent 11px 68px,
+        oklch(0.65 0.02 250 / 0.06) 68px 70px,
+        transparent 70px 138px,
+        oklch(0.42 0.02 265 / 0.12) 138px 140px,
+        transparent 140px 100%
+      ),
+      linear-gradient(168deg, oklch(0.18 0.014 62) 0%, oklch(0.1 0.01 62) 100%);
+  }
+
+  .home-community-well {
+    background: color-mix(
+      in oklch,
+      var(--surface-2) 58%,
+      var(--color-background)
+    );
+    border-radius: 1rem;
+    border: 1px solid color-mix(in oklch, var(--border) 92%, var(--surface-5));
+    box-shadow:
+      inset 0 1px 0 oklch(1 0.002 95 / 0.12),
+      var(--shadow-ambient-1);
+  }
+
+  .reader-pending-breathe {
+    animation: reader-pending-breathe 1.65s ease-in-out infinite;
+  }
+
+  /** 设计预览：触控反馈示范 */
+  .ds-spring-hit:active {
+    box-shadow: var(--shadow-inset-pressed);
+  }
+}
+
+@keyframes reader-pending-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.82;
+  }
+
+  50% {
+    transform: scale(1.22);
+    opacity: 1;
+  }
+}
+
+/*
+ * View Transitions（跨路由 morph 的根导航 + root 时长；具名元素的伪选择器只对固定 ident 生效，
+ * `book-cover-*` 等动态书名仍沿用浏览器默认具名过渡）。
+ */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(book-cover),
+::view-transition-new(book-cover) {
+  animation-duration: 0.6s;
+}
+
+::view-transition-image-pair(book-cover) {
+  isolation: isolate;
+}
