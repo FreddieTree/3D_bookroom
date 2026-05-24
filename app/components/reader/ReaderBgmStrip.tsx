@@ -51,6 +51,41 @@ export function ReaderBgmStrip({ bookId, chapterIndex }: ReaderBgmStripProps) {
       stop();
       return;
     }
+    if (meta?.bgmUrl) {
+      const audio = new Audio(meta.bgmUrl);
+      audio.loop = true;
+      audio.volume = 0.4;
+      try {
+        await audio.play();
+      } catch (e) {
+        console.warn("[ReaderBgmStrip] real bgm play failed, fallback to mock:", e);
+        handleRef.current = startMockAmbient({ durationCapMs: 120_000, gain: 0.05 });
+        setPlaying(true);
+        return;
+      }
+      handleRef.current = {
+        stop: () => {
+          audio.pause();
+          audio.src = "";
+        },
+        fadeOutAndStop: (durationMs: number) => {
+          const start = audio.volume;
+          const steps = 20;
+          let i = 0;
+          const id = window.setInterval(() => {
+            i += 1;
+            audio.volume = Math.max(0, start * (1 - i / steps));
+            if (i >= steps) {
+              window.clearInterval(id);
+              audio.pause();
+              audio.src = "";
+            }
+          }, durationMs / steps);
+        },
+      };
+      setPlaying(true);
+      return;
+    }
     const h = startMockAmbient({ durationCapMs: 120_000, gain: 0.05 });
     handleRef.current = h;
     setPlaying(true);

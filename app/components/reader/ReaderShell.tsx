@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Bot, ChevronLeft, Map as MapIcon, MessageCircle, Mic, Settings } from "lucide-react";
+import { Bot, ChevronLeft, Map as MapIcon, MessageCircle, Settings } from "lucide-react";
 import Link from "next/link";
 
 import { ChatDrawer } from "@/app/components/chat/ChatDrawer";
-import { VoiceRecorderOverlay } from "@/app/components/chat/VoiceRecorderOverlay";
 import { ImageGeneration } from "@/app/components/multimodal/ImageGeneration";
 import { ParagraphVisualAlbum } from "@/app/components/multimodal/ParagraphVisualAlbum";
 import { RadioDramaMode } from "@/app/components/multimodal/RadioDramaMode";
@@ -85,14 +84,12 @@ export function ReaderShell({
     y: number;
   } | null>(null);
   const [pressingId, setPressingId] = useState<string | null>(null);
-  const [footerVoiceOpen, setFooterVoiceOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
   const lastIoParagraph = useRef<string | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pressStart = useRef<{ x: number; y: number } | null>(null);
-  const footerMicTimer = useRef<number | null>(null);
 
   const chapter = chapters?.[chapterIndex] ?? null;
   const totalChapters = chapters?.length ?? 0;
@@ -306,27 +303,6 @@ export function ReaderShell({
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (footerMicTimer.current) clearTimeout(footerMicTimer.current);
-    };
-  }, []);
-
-  const clearFooterMicHold = () => {
-    if (footerMicTimer.current) {
-      clearTimeout(footerMicTimer.current);
-      footerMicTimer.current = null;
-    }
-  };
-
-  const startFooterMicHold = () => {
-    clearFooterMicHold();
-    footerMicTimer.current = window.setTimeout(() => {
-      footerMicTimer.current = null;
-      safeVibrate(12);
-      setFooterVoiceOpen(true);
-    }, 450);
-  };
 
   const activeParagraphId =
     readerProgressByBook[bookId]?.paragraphId ??
@@ -598,16 +574,6 @@ export function ReaderShell({
               </div>
               <button
                 type="button"
-                onPointerDown={() => startFooterMicHold()}
-                onPointerUp={clearFooterMicHold}
-                onPointerCancel={clearFooterMicHold}
-                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-soft)] transition-transform active:scale-95"
-                aria-label="长按语音问 AI"
-              >
-                <Mic className="size-5" strokeWidth={1.85} />
-              </button>
-              <button
-                type="button"
                 onClick={() => openChat()}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 aria-label="AI 对话"
@@ -687,17 +653,6 @@ export function ReaderShell({
         chapterIndex={chapterIndex}
       />
 
-      <VoiceRecorderOverlay
-        open={footerVoiceOpen}
-        onClose={() => setFooterVoiceOpen(false)}
-        onSend={(text) =>
-          sendChatMessage(text, {
-            bookId,
-            paragraphId: activeParagraphId ? activeParagraphId : null,
-            currentChapterIndex: chapterIndex,
-          })
-        }
-      />
 
       <ImageGeneration
         bookId={bookId}
@@ -707,6 +662,7 @@ export function ReaderShell({
       />
 
       <RadioDramaMode
+        bookId={bookId}
         open={radioParagraph != null}
         onClose={() => setRadioParagraph(null)}
         paragraph={radioParagraph}

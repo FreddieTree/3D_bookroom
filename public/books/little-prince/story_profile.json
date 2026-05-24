@@ -1,0 +1,67 @@
+{
+  "title": "小王子",
+  "author": "[法国]圣埃克苏佩里",
+  "genre": "literary-fantasy, children's classic literature, philosophical fiction",
+  "tone": "bittersweet, contemplative, tender, quietly melancholic with moments of wonder and profound simplicity. The prose is deceptively simple yet carries philosophical depth. There is a persistent undercurrent of loneliness and longing tempered by warmth and connection.",
+  "setting": "The Sahara Desert (primary setting) with flashbacks to Asteroid B-612 and five other asteroids the Little Prince visited. Set in an unspecified time—the narrator is a pilot stranded in the desert, evoking pre-WWII era aviation. The cosmos is rendered as intimate and personal rather than vast and cold.",
+  "summary": "A pilot stranded in the Sahara Desert encounters a mysterious young boy—the Little Prince—who recounts his journey from his tiny home asteroid (B-612) through the cosmos. He visited six planets inhabited by peculiar adults: a king who believes he rules all, a vain man obsessed with being admired, a drunkard trapped in a cycle of shame, a businessman who counts stars he never uses, a lamplighter trapped by an absurd rule, and a geographer who never leaves his desk. The Little Prince's profound sorrow stems from his beloved Rose—a flower he left behind after misunderstanding her love. In the desert, the pilot and the Little Prince form a fragile friendship, and the Little Prince gently reveals that he must return to his planet. The novella closes with the narrator's haunting admission that he carries the Little Prince's absence like a tender wound, and that 'it is only with the heart that one can see rightly; what is essential is invisible to the eye.'",
+  "art_style": "Hand-painted watercolor illustration with pencil underdrawing, evoking the delicate, naïf aesthetic of Saint-Exupéry's own original 1943 watercolors. The palette centers on warm desert sand and ochre, expansive sky blues ranging from pale morning cerulean to deep twilight indigo, soft blush rose-pink for the Little Prince's hair and the beloved Rose, and touches of cool silver-gray for moonlight scenes. Lighting alternates between the warm golden-hour glow of desert sunsets—casting long amber shadows across dunes—and the cool silver-blue of star-filled night skies, with the Little Prince often caught in a rim of otherworldly light. Brushwork is loose and visible, with dry-brush texture and slight granulation where pigment lifts from paper; edges remain soft and unpainted in places, letting the cream paper breathe through. Composition favors vast negative space—immense sky dominating the upper third of frames, wide desert horizons with tiny human figures placed off-center—creating intimate scale against infinite landscapes. Frontal and three-quarter views predominate; the Little Prince is rendered small but never insignificant, his silhouette distinct against expansive backgrounds. In the spirit of Saint-Exupéry's own illustrations and the gentle gouache paintings of Eric Carle's early work, but with a European hand.",
+  "art_style_negative": "no on-image text, no captions, no watermarks, no logos, no UI elements, no signatures, no anachronistic modern objects, no photorealistic rendering, no harsh digital airbrush effects, no saturated neon colors, no heavy black outlines, no manga or anime influences, no corporate mascot aesthetic, no CGI texture gloss",
+  "music_baseline": "A loopable, low-intensity, fully instrumental ambient underscore. Instrumentation: felt-hammer piano, soft bowed strings (sul tasto), warm analog pad, sparse low cello, gentle wood percussion (no kit). Tempo 60–72 BPM, key D minor with dorian colour, dynamic envelope kept between mp and mf with no swells, no climactic builds, no drops. Role: instrumental underscore for reading — sits behind narration without pulling attention, ends in a way that loops cleanly into the start. Zero vocals, zero lyrics, zero vocal samples.",
+  "characters": [
+    {
+      "name": "小王子",
+      "aliases": [
+        "Little Prince (英文名)",
+        "the Little Prince",
+        "王子的我（叙述者对王子的称呼）"
+      ],
+      "gender": "unknown",
+      "age_group": "child",
+      "description": "The Little Prince is a child of indeterminate gender, with golden hair, a soft face, and an air of gentle sorrow beneath his curiosity. He comes from Asteroid B-612, a planet no larger than a house, where he tended a single rose and watched three volcanoes (two active, one dormant). He is philosophical yet innocent, asking questions that unsettle the narrator with their simplicity and depth. His departure from his planet was precipitated by a misunderstanding with his Rose, whose vanity he could not interpret as love. He carries a scarf ofunset blue, a sword-like stick, and three volcanoes in his care.",
+      "appearance": "Childlike figure with a shock of unset golden-blonde hair that catches the light. Pale, warm-toned skin with a faint blush on the cheeks. Large, expressive eyes—deep blue, like the sky seen from his asteroid—with a direct, searching gaze that belies their gentle owner. Slender build, small enough to sit on a stone or a hillside without taking up space. Signature garment is a long, flowing scarf of unset blue (vert unset) that trails behind him in the desert wind, giving him an otherworldly, slightly spectral quality. Wears simple, vaguely old-fashioned clothing reminiscent of Saint-Exupéry's own watercolor illustrations: soft tunic or loose jacket, shorts or simple trousers, sturdy but not heavy boots. Holds nothing material as a prop—his richness is in his gaze and questions.",
+      "voice_description": "Soft, clear, slightly high-pitched child's voice with no regional accent. Speech is unhurried, deliberate, and sparse—each sentence carries weight. There is a quality of profound seriousness beneath the child's vocabulary, a grave innocence that makes adults uncomfortable. When he asks 'What is essential is invisible to the eye?' his tone carries no doubt, only the certainty of one who has seen truths the world has forgotten. Occasional moments of sudden, sharp emotion (longing for his Rose, anger at being misunderstood) break the measured pace with unexpected intensity before settling back to quiet contemplation.",
+      "voice_id": "Chinese (Mandarin)_Cute_Spirit",
+      "voice_name": "Cute Spirit",
+      "portrait_url": "http://hailuo-image-algeng-data-us.oss-us-east-1.aliyuncs.com/image_inference_output%2Ftalkie%2Fprod%2Fimg%2F2026-05-23%2F24531832-dc07-43f5-977b-11c7c096c0bd_aigc.jpeg?Expires=1779615180&OSSAccessKeyId=LTAI5tRDTcyEYLLuBEpJRwCi&Signature=GQZC5Rnj%2FN6zBxAr%2BSIt1Y7RxPA%3D",
+      "portrait_path": "portraits\\小王子.png"
+    },
+    {
+      "name": "叙述者/飞行员",
+      "aliases": [
+        "我",
+        "the narrator",
+        "the aviator",
+        "叙述者"
+      ],
+      "gender": "male",
+      "age_group": "adult",
+      "description": "An unnamed pilot who narrates the story. In his youth he was discouraged from becoming an artist or aviator but pursued aviation anyway. He crashed in the Sahara Desert, and it is there he meets the Little Prince. He is characterized by his ability to 'see beyond' the surface of things—the Little Prince says he is the only adult who truly understands. He draws two pictures as a child (a boa constrictor swallowing an elephant, and the opposite view) and is astonished when the Little Prince immediately understands. He is melancholic, thoughtful, and carries the Little Prince's absence as a tender wound after their parting. He searches for water in the desert, forming a bond through this shared labor of survival and conversation.",
+      "appearance": "Adult man, approximately 30s–40s in age, with a lean, weathered face suggesting time spent in sun and wind. Dark hair, possibly with early gray at the temples, unkempt from the desert crash. Deep-set eyes, thoughtful and tired but warm. Five o'clock shadow. Wears the remnants of a pilot's flight suit—practical, olive-brown leather jacket with worn edges, open at the collar. His hands are calloused, capable, slightly stained with oil and sand. Glasses may be absent or present—glasses would add an air of gentle intellectualism. Stubble. Age-appropriate to the 1930s–40s aviation era: leather helmet hair imprint, leather flight jacket. Stands with the slight forward lean of someone accustomed to leaning over an instrument panel.",
+      "voice_description": "Warm low-to-mid tenor with a faint roughness from desert wind and disuse. Measured, thoughtful pacing—reflective rather than rapid. Speaks with quiet gravity, occasionally self-deprecating when recounting his failed drawings. His voice carries exhaustion and wonder in equal measure: flat affect when describing survival necessities, warming and lifting slightly when speaking the Little Prince's words or remembering their conversations. A slightly hoarse quality from sleeping outdoors. In his final reflections, his voice slows further, dropping to near-whisper—intimate, as though sharing a secret with the reader that he does not want the world to hear.",
+      "voice_id": "Chinese (Mandarin)_Gentleman",
+      "voice_name": "Gentleman",
+      "portrait_url": "http://hailuo-image-algeng-data-us.oss-us-east-1.aliyuncs.com/image_inference_output%2Ftalkie%2Fprod%2Fimg%2F2026-05-23%2Fc607c0f8-2bb6-447a-83f0-b0b8c2e843e5_aigc.jpeg?Expires=1779615179&OSSAccessKeyId=LTAI5tRDTcyEYLLuBEpJRwCi&Signature=h%2FBR8DKKWx9%2BJfQdqvIDWimRfA0%3D",
+      "portrait_path": "portraits\\叙述者_飞行员.png"
+    },
+    {
+      "name": "玫瑰",
+      "aliases": [
+        "我的花",
+        "my flower",
+        "the Rose",
+        "王子的花",
+        "La Rose (法文原名)"
+      ],
+      "gender": "female",
+      "age_group": "unknown",
+      "description": "The Rose is the singular, exquisite flower on Asteroid B-612—a fragile vanity whose beauty is matched only by her need for care and attention. She told the Little Prince she came into being through the union of sun and soil, and she demands protection from wind and cold. Her vanity and neediness—the coughing, the pretense of weakness—were her ways of expressing love, but the naive Little Prince could not understand and felt unappreciated. He left his planet, and his longing for her forms the emotional core of the Little Prince's journey. She appears only in the Little Prince's memories and recounting, but her presence is felt throughout the narrative as the embodiment of love that must be tended to be understood.",
+      "appearance": "A single rose, rendered in soft watercolor with visible brushstrokes. Her petals are blush-rose pink with deeper pink veining, edges curling slightly outward as though she is always on the verge of opening or wilting with theatrical excess. She has four thorns—not five, as she claims—and yellow stamens visible at her center. She is small enough to hold in one hand, yet she fills the Little Prince's planet with her fragrance. When the Little Prince describes her, the watercolor rendering should capture her in morning light or golden hour—soft, luminous, slightly idealized, as memory renders beauty more tender than it perhaps was. Leaves are soft green with slight serration, rendered in loose brushstrokes. The rose may appear in a slight vase or simply held by invisible hands, as the Little Prince remembers her.",
+      "voice_description": "Delicate, feminine voice with theatrical affectation—a slight breathiness, as though she is perpetually on the verge of coughing or fading. Her sentences carry performative fragility: she emphasizes her weakness to invite care rather than to genuinely claim it. There is vanity beneath every petal—pride in her beauty, satisfaction when admired, petulance when ignored. Yet there is also genuine vulnerability, a fear of cold and wind and solitude. She speaks in short, declarative statements peppered with self-reference: 'I am not a mere flower. I have four thorns and a fine scent. You owe me protection.' Her tone is never harsh, only tenderly self-absorbed.",
+      "voice_id": "Chinese (Mandarin)_Mature_Woman",
+      "voice_name": "Mature Woman",
+      "portrait_url": "http://hailuo-image-algeng-data-us.oss-us-east-1.aliyuncs.com/image_inference_output%2Ftalkie%2Fprod%2Fimg%2F2026-05-23%2Fa7e71379-baf9-4c77-99a0-95ef6c28c363_aigc.jpeg?Expires=1779615183&OSSAccessKeyId=LTAI5tRDTcyEYLLuBEpJRwCi&Signature=bxwbmE4OfjeBjIqjPINiHCmz6xg%3D",
+      "portrait_path": "portraits\\玫瑰.png"
+    }
+  ]
+}

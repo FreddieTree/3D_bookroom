@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 import { getChapterCoverMeta } from "@/app/lib/mock/chapter-cover";
-import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
+import { resumeAudioContext } from "@/app/lib/audio/mock-ambient";
 import type { MockAmbientHandle } from "@/app/lib/audio/mock-ambient";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
 
@@ -28,13 +28,17 @@ export function ChapterCoverExperience({
   const startAmbient = useCallback(async () => {
     if (startedRef.current) return;
     startedRef.current = true;
+    if (!meta?.bgmUrl) return;
     try {
       await resumeAudioContext();
-      ambientRef.current?.stop();
-      ambientRef.current = startMockAmbient({
-        durationCapMs: 30_000,
-        gain: 0.065,
-      });
+      const audio = new Audio(meta.bgmUrl);
+      audio.loop = true;
+      audio.volume = 0.3;
+      await audio.play();
+      ambientRef.current = {
+        stop: () => { audio.pause(); audio.src = ""; },
+        fadeOutAndStop: () => { audio.pause(); audio.src = ""; },
+      };
       queueMicrotask(() => setNeedsUnlock(false));
     } catch {
       queueMicrotask(() => {
@@ -42,7 +46,7 @@ export function ChapterCoverExperience({
         startedRef.current = false;
       });
     }
-  }, []);
+  }, [meta?.bgmUrl]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -93,6 +97,16 @@ export function ChapterCoverExperience({
         >
           {n.toString().padStart(2, "0")}
         </motion.p>
+        {meta.illustrationUrl ? (
+          <motion.img
+            src={meta.illustrationUrl}
+            alt=""
+            className="mx-auto mt-8 max-h-[34dvh] w-auto rounded-2xl object-cover shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: leaving ? 0 : 1, scale: leaving ? 0.98 : 1 }}
+            transition={{ delay: 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          />
+        ) : null}
         <motion.h1
           className="mt-10 text-center font-serif text-[1.35rem] font-semibold leading-snug text-zinc-200 sm:text-[1.5rem]"
           initial={{ opacity: 0, y: 20 }}

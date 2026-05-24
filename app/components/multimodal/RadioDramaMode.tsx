@@ -1,89 +1,176 @@
 "use client";
 
-/**
- * TODO(成员3): 接入 TTS / 分轨对白；保留角色条与播放状态机接口。
- * Mock：Web Audio 轻提示音 + 角色轮换高亮。
- */
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Pause, Play, X } from "lucide-react";
 
 import type { Paragraph } from "@/app/lib/data/sample-content";
-import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
 import { cn } from "@/app/lib/utils";
 
-type RadioRole = { id: string; label: string; emoji: string };
+type RadioRole = { id: string; label: string; emoji: string; voiceId: string };
 
-const ROLES: RadioRole[] = [
-  { id: "r1", label: "叙述者", emoji: "🎧" },
-  { id: "r2", label: "小王子", emoji: "🤴" },
-  { id: "r3", label: "玫瑰", emoji: "🌹" },
+const NARRATOR_VOICE = "Chinese (Mandarin)_Gentleman";
+
+const DEFAULT_ROLES: RadioRole[] = [
+  { id: "narrator", label: "叙述者", emoji: "🎧", voiceId: NARRATOR_VOICE },
+  { id: "prince", label: "小王子", emoji: "🤴", voiceId: "Chinese (Mandarin)_Cute_Spirit" },
+  { id: "rose", label: "玫瑰", emoji: "🌹", voiceId: "Chinese (Mandarin)_Mature_Woman" },
 ];
 
+type DialogueLine = { text: string; roleIndex: number };
+
+function extractDialogues(text: string): DialogueLine[] {
+  // 匹配中文引号 "..." 内的对白，最多 3 句
+  const re = /[""""]([^""""]{2,80})["""]/g;
+  const results: DialogueLine[] = [];
+  let m: RegExpExecArray | null;
+  let idx = 0;
+  while ((m = re.exec(text)) !== null && results.length < 3) {
+    results.push({ text: m[1]!, roleIndex: (idx % 2) + 1 });
+    idx++;
+  }
+  return results;
+}
+
+async function fetchVoiceCast(bookId: string): Promise<Record<string, { voice_id: string }>> {
+  try {
+    const res = await fetch(`/books/${bookId}/voice_cast.json`);
+    if (!res.ok) return {};
+    return (await res.json()) as Record<string, { voice_id: string }>;
+  } catch {
+    return {};
+  }
+}
+
+async function synthesize(text: string, voiceId: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/generate-tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, voiceId }),
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
+
 type RadioDramaModeProps = {
+  bookId: string;
   open: boolean;
   onClose: () => void;
   paragraph: Paragraph | null;
 };
 
-export function RadioDramaMode({ open, onClose, paragraph }: RadioDramaModeProps) {
+export function RadioDramaMode({ bookId, open, onClose, paragraph }: RadioDramaModeProps) {
   const [playing, setPlaying] = useState(false);
-  const [line, setLine] = useState(0);
-  const cueRef = useRef<ReturnType<typeof startMockAmbient> | null>(null);
-  const tickRef = useRef<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [activeLine, setActiveLine] = useState(0);
+  const [roles, setRoles] = useState<RadioRole[]>(DEFAULT_ROLES);
 
-  const stopCue = useCallback(() => {
-    cueRef.current?.stop();
-    cueRef.current = null;
-    if (tickRef.current) window.clearInterval(tickRef.current);
-    tickRef.current = null;
+  // 用 ref 存当前的 lines/roles，避免 stale closure
+  const linesRef = useRef<DialogueLine[]>([]);
+  const rolesRef = useRef<RadioRole[]>(DEFAULT_ROLES);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlsRef = useRef<string[]>([]);
+  const playingRef = useRef(false);
+
+  // 同步 roles state 到 ref
+  useEffect(() => {
+    rolesRef.current = roles;
+  }, [roles]);
+
+  const stopAll = useCallback(() => {
+    playingRef.current = false;
+    audioRef.current?.pause();
+    audioRef.current = null;
   }, []);
 
   useEffect(() => {
     if (!open) {
-      stopCue();
-      queueMicrotask(() => {
-        setPlaying(false);
-        setLine(0);
-      });
+      stopAll();
+      setPlaying(false);
+      setLoading(false);
+      setActiveLine(0);
+      blobUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+      blobUrlsRef.current = [];
     }
-  }, [open, stopCue]);
+  }, [open, stopAll]);
 
-  const playOneCue = useCallback(async () => {
-    await resumeAudioContext();
-    stopCue();
-    const h = startMockAmbient({ durationCapMs: 900, gain: 0.045 });
-    cueRef.current = h;
-  }, [stopCue]);
+  useEffect(() => () => { stopAll(); }, [stopAll]);
+
+  // 段落变化时解析对白，并加载 voice cast
+  useEffect(() => {
+    if (!paragraph) return;
+    const extracted = extractDialogues(paragraph.text);
+    if (extracted.length === 0) {
+      linesRef.current = [{ text: paragraph.text.slice(0, 200), roleIndex: 0 }];
+    } else {
+      linesRef.current = extracted;
+    }
+
+    void fetchVoiceCast(bookId).then((cast) => {
+      if (Object.keys(cast).length === 0) return;
+      const next = [...DEFAULT_ROLES];
+      const narratorVoice = cast["叙述者/飞行员"]?.voice_id ?? NARRATOR_VOICE;
+      next[0] = { ...next[0]!, voiceId: narratorVoice };
+      const princeVoice = cast["小王子"]?.voice_id ?? next[1]!.voiceId;
+      next[1] = { ...next[1]!, voiceId: princeVoice };
+      const roseVoice = cast["玫瑰"]?.voice_id ?? next[2]!.voiceId;
+      next[2] = { ...next[2]!, voiceId: roseVoice };
+      rolesRef.current = next;
+      setRoles(next);
+    });
+  }, [paragraph, bookId]);
+
+  // 顺序播放每一句，通过 ref 避免 stale closure
+  const playFrom = useCallback(async (idx: number) => {
+    const allLines = linesRef.current;
+    const allRoles = rolesRef.current;
+
+    if (!playingRef.current || idx >= allLines.length) {
+      setPlaying(false);
+      setActiveLine(0);
+      return;
+    }
+
+    const dl = allLines[idx]!;
+    const role = allRoles[dl.roleIndex] ?? allRoles[0]!;
+    setActiveLine(dl.roleIndex);
+
+    const blobUrl = await synthesize(dl.text, role.voiceId);
+    if (!blobUrl || !playingRef.current) {
+      void playFrom(idx + 1);
+      return;
+    }
+
+    blobUrlsRef.current.push(blobUrl);
+    const audio = new Audio(blobUrl);
+    audioRef.current = audio;
+    audio.onended = () => { void playFrom(idx + 1); };
+    try {
+      await audio.play();
+    } catch {
+      void playFrom(idx + 1);
+    }
+  }, []);
 
   const togglePlay = async () => {
     if (!open) return;
-    await resumeAudioContext();
     if (playing) {
-      stopCue();
-      if (tickRef.current) {
-        window.clearInterval(tickRef.current);
-        tickRef.current = null;
-      }
+      stopAll();
       setPlaying(false);
       return;
     }
+    setLoading(true);
+    playingRef.current = true;
     setPlaying(true);
-    setLine(0);
-    await playOneCue();
-    tickRef.current = window.setInterval(() => {
-      setLine((l) => (l + 1) % ROLES.length);
-      void playOneCue();
-    }, 3200);
+    setActiveLine(0);
+    setLoading(false);
+    void playFrom(0);
   };
-
-  useEffect(
-    () => () => {
-      stopCue();
-    },
-    [stopCue],
-  );
 
   return (
     <AnimatePresence>
@@ -107,7 +194,7 @@ export function RadioDramaMode({ open, onClose, paragraph }: RadioDramaModeProps
               <button
                 type="button"
                 onClick={() => {
-                  stopCue();
+                  stopAll();
                   setPlaying(false);
                   onClose();
                 }}
@@ -123,20 +210,18 @@ export function RadioDramaMode({ open, onClose, paragraph }: RadioDramaModeProps
             </p>
 
             <div className="mb-4 flex justify-between gap-2 px-1">
-              {ROLES.map((r, i) => (
+              {roles.map((r, i) => (
                 <div
                   key={r.id}
                   className={cn(
                     "flex flex-1 flex-col items-center rounded-xl px-1 py-2 transition-all",
-                    playing && line === i
+                    playing && activeLine === i
                       ? "scale-105 bg-white/12 ring-1 ring-amber-400/50"
                       : "bg-white/[0.04] opacity-70",
                   )}
                 >
                   <span className="text-2xl">{r.emoji}</span>
-                  <span className="mt-1 text-[0.65rem] text-zinc-400">
-                    {r.label}
-                  </span>
+                  <span className="mt-1 text-[0.65rem] text-zinc-400">{r.label}</span>
                 </div>
               ))}
             </div>
@@ -145,7 +230,8 @@ export function RadioDramaMode({ open, onClose, paragraph }: RadioDramaModeProps
               <button
                 type="button"
                 onClick={() => void togglePlay()}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md"
+                disabled={loading}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md disabled:opacity-60"
                 aria-label={playing ? "暂停" : "播放"}
               >
                 {playing ? (
