@@ -120,10 +120,11 @@ class BookEnricher:
         chapter_analyzer = ChapterAnalyzer(self.config)
 
         # ----- Stage 2: per-chapter generation -----
-        with ThreadPoolExecutor(max_workers=self.config.concurrent_chapter_workers) as pool:
-            futures = {
-                pool.submit(
-                    self._process_chapter,
+        total = len(book.chapters)
+        for idx, ch in enumerate(book.chapters):
+            print(f"[{idx+1}/{total}] {ch.title}", flush=True)
+            try:
+                self._process_chapter(
                     ch,
                     profile,
                     chapter_analyzer,
@@ -134,15 +135,9 @@ class BookEnricher:
                     portrait_map,
                     alias_to_canonical,
                     chapters_dir,
-                ): ch
-                for ch in book.chapters
-            }
-            for fut in tqdm(as_completed(futures), total=len(futures), desc="Chapters"):
-                ch = futures[fut]
-                try:
-                    fut.result()
-                except Exception as e:
-                    print(f"⚠️  Chapter {ch.index + 1} ({ch.title}) failed: {e}")
+                )
+            except Exception as e:
+                print(f"⚠️  Chapter {ch.index + 1} ({ch.title}) failed: {e}", flush=True)
 
         print(f"✅ Done. Output in {book_dir}")
         return book_dir

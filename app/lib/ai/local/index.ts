@@ -6,7 +6,7 @@
  *   - streamAsk      : 概念路由 + 检索 + 模板 composer + 进度感知裁切（《小王子》）/ 老模板（其它书）
  *   - composeReleaseAnswer : 命中 concept 时用主模板「揭晓」；缺概念时退回 legacy 文案
  *
- * 未来 MiniMax 接入：见 `app/lib/ai/remote/minimaxProvider.ts`。
+ * 真实远端 provider（MiniMax，已交付）：见 `app/lib/ai/remote/minimaxProvider.ts`。
  */
 
 import { pickPrimaryConcept } from "@/app/lib/ai/local/concepts";

@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * TODO(成员3): 替换候选图为真实扩散/文生图结果；保留 `onPick` 选中回调与抽屉交互模型。
- * Mock：渐变色块 + emoji 候选，占位骨架屏。
- */
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -38,8 +33,19 @@ function waiterLines(para: Paragraph | null): string[] {
   const t = para.text.trim();
   const a = t.slice(0, 52) + (t.length > 52 ? "…" : "");
   const b = "把语气留在纸上，把光线留给画布。";
-  const c = "正在为你排布三张不同的「看见」…";
+  const c = "正在为你生成专属画面…";
   return [a, b, c];
+}
+
+async function fetchArtStyle(bookId: string): Promise<string> {
+  try {
+    const res = await fetch(`/books/${bookId}/story_profile.json`);
+    if (!res.ok) return "";
+    const data = (await res.json()) as { art_style?: string };
+    return data.art_style ?? "";
+  } catch {
+    return "";
+  }
 }
 
 export function ImageGeneration({
@@ -53,6 +59,7 @@ export function ImageGeneration({
   const [candidates, setCandidates] = useState<
     { emoji: string; from: string; to: string }[]
   >([]);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   const lines = useMemo(() => waiterLines(paragraph), [paragraph]);
 
@@ -61,20 +68,54 @@ export function ImageGeneration({
       queueMicrotask(() => {
         setPhase("idle");
         setCandidates([]);
+        setGeneratedImageUrl(null);
       });
       return;
     }
     queueMicrotask(() => setPhase("wait"));
   }, [open, paragraph?.id]);
 
-  const onWaiterDone = useCallback(() => {
+  const onWaiterDone = useCallback(async () => {
+    if (!paragraph) return;
     setPhase("skeleton");
+
+    const artStyle = await fetchArtStyle(bookId);
+
+    try {
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paragraphText: paragraph.text, artStyle }),
+      });
+      const data = (await res.json()) as { imageUrl?: string; error?: string };
+      if (data.imageUrl) {
+        setGeneratedImageUrl(data.imageUrl);
+        setPhase("pick");
+        return;
+      }
+    } catch {
+      // fallback to mock below
+    }
+
+    // fallback: random palette
     window.setTimeout(() => {
       const pool = [...PALETTES].sort(() => Math.random() - 0.5).slice(0, 3);
       setCandidates(pool);
       setPhase("pick");
     }, demoImageSkeletonMs(520));
-  }, []);
+  }, [bookId, paragraph]);
+
+  const pickReal = () => {
+    if (!paragraph || !generatedImageUrl) return;
+    safeVibrate(14);
+    addParagraphVisual(bookId, paragraph.id, {
+      emoji: "🖼",
+      colorFrom: "#1e293b",
+      colorTo: "#334155",
+      imageUrl: generatedImageUrl,
+    });
+    onClose();
+  };
 
   const pick = (c: (typeof candidates)[number]) => {
     if (!paragraph) return;
@@ -133,17 +174,33 @@ export function ImageGeneration({
             ) : null}
 
             {phase === "skeleton" ? (
-              <div className="grid grid-cols-3 gap-2 pb-6">
-                {["a", "b", "c"].map((k) => (
-                  <div
-                    key={k}
-                    className="aspect-[4/5] animate-pulse rounded-xl bg-muted"
-                  />
-                ))}
+              <div className="pb-6">
+                <div className="mx-auto aspect-[3/4] w-48 animate-pulse rounded-xl bg-muted" />
               </div>
             ) : null}
 
-            {phase === "pick" ? (
+            {phase === "pick" && generatedImageUrl ? (
+              <div className="pb-6">
+                <div className="relative mx-auto overflow-hidden rounded-xl ring-1 ring-black/10" style={{ maxWidth: "192px" }}>
+                  <img
+                    src={generatedImageUrl}
+                    alt="AI 生成插图"
+                    className="aspect-[3/4] w-full object-cover"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={pickReal}
+                  className={cn(
+                    "mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground",
+                  )}
+                >
+                  使用此图
+                </button>
+              </div>
+            ) : null}
+
+            {phase === "pick" && !generatedImageUrl ? (
               <div className="grid grid-cols-3 gap-2 pb-6">
                 {candidates.map((c) => (
                   <motion.button

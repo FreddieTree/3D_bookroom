@@ -26,6 +26,7 @@ class AgeGroup(str, Enum):
     YOUNG_ADULT = "young_adult"
     ADULT = "adult"
     ELDER = "elder"
+    UNKNOWN = "unknown"
 
 
 class Character(BaseModel):

@@ -92,13 +92,17 @@ export function ParagraphVisualAlbum({
               className={cn(
                 "relative h-20 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-black/15",
               )}
-              style={{
+              style={v.imageUrl ? undefined : {
                 background: `linear-gradient(140deg, ${v.colorFrom}, ${v.colorTo})`,
               }}
             >
-              <span className="absolute inset-0 flex items-center justify-center text-3xl drop-shadow">
-                {v.emoji}
-              </span>
+              {v.imageUrl ? (
+                <img src={v.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <span className="absolute inset-0 flex items-center justify-center text-3xl drop-shadow">
+                  {v.emoji}
+                </span>
+              )}
             </button>
           ))}
         </motion.div>
@@ -107,14 +111,18 @@ export function ParagraphVisualAlbum({
           type="button"
           onClick={() => setFullscreen(visuals[visuals.length - 1]!)}
           className="flex h-12 w-16 overflow-hidden rounded-lg ring-1 ring-border"
-          style={{
+          style={visuals[visuals.length - 1]!.imageUrl ? undefined : {
             background: `linear-gradient(140deg, ${visuals[visuals.length - 1]!.colorFrom}, ${visuals[visuals.length - 1]!.colorTo})`,
           }}
           aria-label="预览画面"
         >
-          <span className="m-auto text-2xl drop-shadow">
-            {visuals[visuals.length - 1]!.emoji}
-          </span>
+          {visuals[visuals.length - 1]!.imageUrl ? (
+            <img src={visuals[visuals.length - 1]!.imageUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="m-auto text-2xl drop-shadow">
+              {visuals[visuals.length - 1]!.emoji}
+            </span>
+          )}
         </button>
       )}
 
@@ -128,15 +136,19 @@ export function ParagraphVisualAlbum({
           <motion.div
             initial={{ scale: 0.94, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="aspect-square w-full max-w-[min(100vw-3rem,22rem)] rounded-2xl shadow-2xl ring-1 ring-white/15"
-            style={{
+            className="aspect-square w-full max-w-[min(100vw-3rem,22rem)] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/15"
+            style={fullscreen.imageUrl ? undefined : {
               background: `linear-gradient(145deg, ${fullscreen.colorFrom}, ${fullscreen.colorTo})`,
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="flex h-full items-center justify-center text-7xl drop-shadow-lg">
-              {fullscreen.emoji}
-            </span>
+            {fullscreen.imageUrl ? (
+              <img src={fullscreen.imageUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="flex h-full items-center justify-center text-7xl drop-shadow-lg">
+                {fullscreen.emoji}
+              </span>
+            )}
           </motion.div>
         </button>
       ) : null}

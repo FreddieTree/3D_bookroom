@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AnimatedTitle } from "@/app/components/typography/AnimatedTitle";
 import { getChapterCoverMeta } from "@/app/lib/mock/chapter-cover";
 import { useViewTransitionNavigate } from "@/app/lib/hooks/useViewTransitionNavigate";
-import { resumeAudioContext, startMockAmbient } from "@/app/lib/audio/mock-ambient";
+import { resumeAudioContext } from "@/app/lib/audio/mock-ambient";
 import type { MockAmbientHandle } from "@/app/lib/audio/mock-ambient";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
 
@@ -24,6 +24,7 @@ export function ChapterCoverExperience({
 }: ChapterCoverExperienceProps) {
   const navigateVt = useViewTransitionNavigate();
   const meta = getChapterCoverMeta(bookId, chapterIndex, chapterTitleFromDb);
+  const bgmUrl = meta?.bgmUrl;
   const ambientRef = useRef<MockAmbientHandle | null>(null);
   const startedRef = useRef(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
@@ -32,13 +33,23 @@ export function ChapterCoverExperience({
   const startAmbient = useCallback(async () => {
     if (startedRef.current) return;
     startedRef.current = true;
+    if (!bgmUrl) return;
     try {
       await resumeAudioContext();
-      ambientRef.current?.stop();
-      ambientRef.current = startMockAmbient({
-        durationCapMs: 30_000,
-        gain: 0.065,
-      });
+      const audio = new Audio(bgmUrl);
+      audio.loop = true;
+      audio.volume = 0.3;
+      await audio.play();
+      ambientRef.current = {
+        stop: () => {
+          audio.pause();
+          audio.src = "";
+        },
+        fadeOutAndStop: () => {
+          audio.pause();
+          audio.src = "";
+        },
+      };
       queueMicrotask(() => setNeedsUnlock(false));
     } catch {
       queueMicrotask(() => {
@@ -46,7 +57,7 @@ export function ChapterCoverExperience({
         startedRef.current = false;
       });
     }
-  }, []);
+  }, [bgmUrl]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -99,19 +110,29 @@ export function ChapterCoverExperience({
         >
           {n.toString().padStart(2, "0")}
         </motion.p>
-        <div
+        {meta?.illustrationUrl ? (
+          <motion.img
+            src={meta.illustrationUrl}
+            alt=""
+            className="mx-auto mt-8 max-h-[34dvh] w-auto max-w-full rounded-2xl object-cover shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: leaving ? 0 : 1, scale: leaving ? 0.98 : 1 }}
+            transition={{ delay: 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          />
+        ) : null}
+        <motion.h1
           style={chapterHeadingVt}
           className="mt-10 text-center font-serif text-[1.35rem] font-semibold leading-snug text-zinc-200 sm:text-[1.5rem]"
         >
-          <AnimatedTitle text={meta.chapterTitle} />
-        </div>
+          <AnimatedTitle text={meta?.chapterTitle ?? `第 ${n} 章`} />
+        </motion.h1>
         <motion.p
           className="mt-8 text-center font-serif text-[0.95rem] leading-relaxed text-zinc-400"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: leaving ? 0 : 1, y: leaving ? -8 : 0 }}
           transition={{ delay: 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
-          {meta.tagline}
+          {meta?.tagline ?? "本章即将开始，准备好进入阅读。"}
         </motion.p>
 
         <div className="min-h-[min(4rem,8dvh)] flex-1 shrink" />

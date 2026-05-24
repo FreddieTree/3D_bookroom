@@ -13,7 +13,7 @@ type MobileContainerProps = {
  */
 export function MobileContainer({ children, className }: MobileContainerProps) {
   return (
-    <div className="study-room-gutter flex min-h-dvh justify-center overflow-x-hidden">
+    <div className="study-room-gutter flex min-h-dvh justify-center overflow-x-hidden bg-frame">
       <div
         className={cn(
           "relative flex min-h-dvh w-full max-w-[430px] flex-col bg-background text-foreground",

@@ -30,6 +30,7 @@ import statistics
 from typing import List, Optional, Tuple
 
 from anthropic import Anthropic
+import httpx
 
 from config import Config
 from models import Chapter
@@ -163,6 +164,7 @@ class LLMChapterDetector:
         self.client = Anthropic(
             api_key=config.minimax_text_key,
             base_url="https://api.minimax.io/anthropic",
+            http_client=httpx.Client(verify=False, timeout=60),
         )
 
     # ----------------------------- public ---------------------------------

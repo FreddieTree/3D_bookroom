@@ -51,3 +51,15 @@ next-env.d.ts
 
 # Local sample EPUBs (keep out of repo; may be copyrighted or very large)
 sample_book/**/*.epub
+
+# Python pipeline artifacts
+multimodel/__pycache__/
+multimodel/output/
+multimodel/*.stackdump
+multimodel/gen_sample_content.py
+multimodel/sync_assets.py
+
+# Crash dumps and temp screenshots
+*.stackdump
+bash.exe.stackdump
+demo-*.png

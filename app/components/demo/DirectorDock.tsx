@@ -89,7 +89,7 @@ export function DirectorDock() {
   };
 
   return (
-    <div className="pointer-events-none fixed bottom-[max(5.5rem,env(safe-area-inset-bottom))] right-[max(0.75rem,env(safe-area-inset-right))] z-[120] flex flex-col items-end gap-2">
+    <div className="pointer-events-none fixed bottom-[max(5.5rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-[120] flex flex-col items-start gap-2">
       <AnimatePresence>
         {open ? (
           <motion.div

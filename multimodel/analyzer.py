@@ -366,7 +366,7 @@ class StoryAnalyzer:
         self.config = config
         self.client = Anthropic(
             api_key=config.minimax_text_key,
-            base_url="https://api.minimax.io/anthropic"  # ← 将这里的网址改成这个
+            base_url="https://api.minimax.io/anthropic",
         )
 
     def analyze(self, book: Book) -> StoryProfile:
@@ -440,7 +440,7 @@ class ChapterAnalyzer:
         self.config = config
         self.client = Anthropic(
             api_key=config.minimax_text_key,
-            base_url="https://api.minimax.io/anthropic"  # ← 将这里的网址改成这个
+            base_url="https://api.minimax.io/anthropic",
         )
 
     def plan(self, chapter: Chapter, profile: StoryProfile) -> ChapterPlan:

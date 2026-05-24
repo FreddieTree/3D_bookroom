@@ -1,264 +1,301 @@
 # API 接口约定
 
-所有路由默认返回 JSON。**UI 仍为 mock**：把 `NEXT_PUBLIC_USE_REAL_DB` 设为 `"true"` 后，可由 `app/lib/data-source.ts` 中的示例方法切换到服务端数据。
+本文档定义成员 2（AI 工程）与前端阅读器之间的接口边界。当前目标是先支持《小王子》Demo，接口设计需要可迁移到其他书。
 
-## 环境与错误约定
+## 环境变量
 
-| 变量 | 说明 |
-| --- | --- |
-| `MONGODB_URI` | Atlas 或其他 Mongo 连接字符串（仅存 `.env.local`） |
-| `MONGODB_DB` | 数据库名（默认 `bookroom`） |
-| `NEXT_PUBLIC_USE_REAL_DB` | `"true"` 时允许前端 adapters 读取 `/api/*` |
-| `NEXT_PUBLIC_BACKGROUND_PROGRESS_SYNC` | `"true"` 时阅读器防抖 + sendBeacon（仅 `sample-content` 有正文的书），避免刷屏 |
-| `NEXT_PUBLIC_PROGRESS_SYNC_DEBOUNCE_MS` | 防抖毫秒数（默认 9000） |
+服务端变量只允许在 Route Handler 和离线脚本中读取，不要暴露到客户端。
 
-### UX 优先级说明
+```env
+# server-only。用 MINIMAX_ 前缀避免被系统级 ANTHROPIC_* env 覆盖。
+MINIMAX_AUTH_TOKEN=
+MINIMAX_BASE_URL=
+MINIMAX_MODEL=
 
-| 路由 | 行为 |
-| --- | --- |
-| `POST /api/chat` | MiniMax stub **先响应**；会话写入延后到 [`after()`](https://nextjs.org/docs/app/reference/functions/after)，降低首包耗时。ChatDrawer **主路径**现为客户端 AI + `POST /api/conversations/append` 同步条目。 |
-  
-
-```json
-{
-  "error": "DATABASE_UNAVAILABLE",
-  "message": "可读的错误说明（通常为英文异常 message 或兜底中文提示）"
-}
+# 客户端可见。切换 AI provider。
+NEXT_PUBLIC_AI_PROVIDER=local
+NEXT_PUBLIC_DEMO_MODE=true
 ```
 
-演示用户（seed 写入）：`userId=demo-user-001`。未传 `userId` 的接口会退回该默认值（仅脚手架阶段）。
+## 数据坐标
 
----
+全项目统一使用段落级坐标：
 
-## `GET /api/books`
-
-返回书架列表（Mongo `books`，按创建时间逆序）。
-
-**响应示例**
-
-```json
-{
-  "data": [
-    {
-      "bookId": "little-prince",
-      "title": "小王子 · 共读演示",
-      "titleEn": "The Little Prince (demo scaffold)",
-      "language": "bilingual",
-      "tags": ["经典"],
-      "totalParagraphs": 32
-    }
-  ]
-}
+```ts
+type ReadingAnchor = {
+  bookId: string;
+  chapterIndex: number;
+  paragraphId: string | null;
+};
 ```
 
----
+`chapterIndex` 从 `0` 开始。`paragraphId` 必须对应预处理产物或 `sample-content.ts` 中的段落 id。
 
-## `GET /api/books/{bookId}`
+## POST /api/chat
 
-单册元数据。未找到：`404`。
+**当前实现**：薄代理。客户端 POST `{ system, messages, maxTokens? }`，server 转发到 `${MINIMAX_BASE_URL}/v1/messages` (stream)，上游 SSE 解析为 NDJSON 单流回客户端。凭据 server-only。
 
-```json
-{
-  "error": "BOOK_NOT_FOUND",
-  "message": "未找到书目 little-prince"
-}
+剧透判定 / citations / 概念路由都在客户端 `MinimaxAiProvider` 完成（复用 `LocalAiProvider` 的本地引擎），server route 只负责"调模型 + 流式中转"，**不**承担决策。下面 `ChatDecision` / 复杂 SSE 事件等结构是更长期目标（未实现），保留作演进参考。
+
+### Request（实际）
+
+```ts
+type ChatRequest = {
+  system?: string;
+  messages: { role: "user" | "assistant"; content: string }[];
+  maxTokens?: number;  // 默认 4096
+};
 ```
 
----
+### Response（实际）
 
-## `GET /api/books/{bookId}/chapters/{index}`
+`content-type: application/x-ndjson`。每行一条 JSON：
 
-`index` 为零基章节序号（字符串数字）。示例：`GET /api/books/little-prince/chapters/1` 读取第二章。
-
-章节找不到：`404`。非法序号：`400`。
-
----
-
-## `POST /api/conversations/append`
-
-将一条或多条对话条目追加到 Mongo **`conversations`**（与前端 Zustand 并行，用于审计 / 多端复盘）。
-
-**请求体**
-
-```json
-{
-  "userId": "demo-user-001",
-  "bookId": "little-prince",
-  "entries": [
-    { "role": "user", "content": "玫瑰为什么别扭？" },
-    { "role": "assistant", "content": "（AI 正文…）" }
-  ]
-}
+```txt
+{"type":"delta","text":"…部分文字…"}
+{"type":"delta","text":"…后续文字…"}
+{"type":"done"}
 ```
 
-`userId` 可省略 → 退回 `demo-user-001`。`role`：`user` | `assistant` | `system`。单条正文过长会自动截断。
+错误：
 
-**响应**：`200` → `{ "ok": true, "appended": 2 }`；校验失败 → `400`；数据库不可用 → 与其他路由一致的错误 envelope。
-
----
-
-## `POST /api/chat`
-
-占位对话入口（仍为 mock 回复）；会把用户气泡写入 Mongo `Conversation`（`topic=default`）以便成员 2 后续接入 MiniMax。
-
-**请求体**
-
-```json
-{
-  "userId": "demo-user-001",
-  "bookId": "little-prince",
-  "message": "玫瑰为什么需要玻璃罩？"
-}
+```txt
+{"type":"error","message":"…原因…"}
 ```
 
-**响应**
+### Request（长期目标，未实现）
 
-```json
-{
-  "reply": "（Mock）成员 2 尚未接入 MiniMax：…",
-  "type": "normal",
-  "pendingId": "可选，占位"
-}
+```ts
+type ChatRequest = {
+  bookId: string;
+  chapterIndex: number;
+  paragraphId: string | null;
+  question: string;
+  history: Array<{
+    role: "user" | "ai";
+    content: string;
+    type?: "normal" | "spoiler-blocked" | "pending-release";
+    createdAt?: number;
+  }>;
+  pendingQuestions?: PendingQuestion[];
+};
 ```
 
-`type` 取值：`normal` | `spoiler-blocked`。
+### SSE Events
 
----
+返回 `text/event-stream`。每个事件一行 JSON：
 
-## `GET /api/pending`
+```txt
+event: decision
+data: {"canAnswerNow":false,"action":"defer","revealAfter":{"chapterIndex":2,"paragraphId":"p-c3-8"},"deferReason":"答案依赖狐狸讲述驯养之后的信息"}
 
-查询悬念队列条目。
+event: token
+data: {"delta":"这个问题后面会变得更清楚，"}
 
-查询参数：`userId`、`bookId?`、`limit?=25`。
+event: pending
+data: {"id":"pq_xxx","status":"pending","userQuestion":"玫瑰为什么重要？","askedAt":{"bookId":"little-prince","chapterIndex":0,"paragraphId":"p-c1-7"},"revealAfter":{"chapterIndex":2,"paragraphId":"p-c3-8"},"safeTeaser":"先把它理解成一种被惦记的存在，我暂时不说破。"}
 
-```json
-{ "data": [ { "_id": "...", "question": "…", "status": "queued" } ] }
+event: done
+data: {"messageId":"ai_xxx","type":"spoiler-blocked"}
 ```
 
----
+### Decision Schema
 
-## `GET /api/pending/check`
-
-判断是否到达可释放段落（与 `pending.expectedReleaseParagraphId` **精确匹配**）。
-
-查询参数：`userId`、`bookId`、`paragraphId`（必填）。
-
-```json
-{
-  "paragraphId": "p-c1-10",
-  "readyCount": 1,
-  "data": [ { "...": "..." } ]
-}
+```ts
+type ChatDecision = {
+  canAnswerNow: boolean;
+  action: "answer" | "partial" | "defer" | "release";
+  revealAfter?: {
+    chapterIndex: number;
+    paragraphId: string;
+  };
+  deferReason?: string;
+  allowedContextRange: {
+    maxChapterIndex: number;
+    maxParagraphId: string | null;
+  };
+};
 ```
 
----
+规则：
 
-## `GET /api/progress`
+- `answer`：答案完全来自已读范围，可以直接回答。
+- `partial`：只回答已读部分，同时提示后文会继续展开。
+- `defer`：答案依赖未读内容，必须加入悬念队列。
+- `release`：用户已经越过释放点，可以揭晓之前的问题。
 
-拉取 `(userId, bookId)` 阅读进度快照。尚无记录：`404`。
+## POST /api/preprocess
 
----
+离线/管理接口。Demo 阶段可以先不用 UI 调用，优先由脚本生成落盘 JSON。
 
-## `POST /api/progress`
+### Request
 
-写入阅读指针。
-
-**字段**
-
-| 字段 | 说明 |
-| --- | --- |
-| `chapterIndex` | number，必填 |
-| `paragraphId` | string，必填 |
-| `deviceId` | optional |
-| `percentComplete` | optional 0-100 |
-| `mode` | `"update"`（默认，`syncVersion++`）或 `"sync"`（CAS） |
-| `syncVersion` | `mode==="sync"` 时用于冲突检测 |
-
-**冲突 (`409`，仅 sync 模式)**
-
-```json
-{
-  "error": "SYNC_VERSION_CONFLICT",
-  "message": "远端 syncVersion 更加新；…",
-  "progress": { "...": "..." }
-}
+```ts
+type PreprocessRequest = {
+  bookId: string;
+  sourcePath?: string;
+  force?: boolean;
+};
 ```
 
----
+### Response
 
-## `GET /api/generations`
-
-分页列举用户生成的多媒体草稿（`generatedcontents`）。
-
-查询参数：`userId`、`limit?=48`。
-
----
-
-## `GET /api/community`
-
-社区瀑布流占位数据。
-
-查询参数：`featured?=0|1`（`1` 只取 `isFeatured`）、`limit?=40`。
-
-```json
-{ "featured": false, "data": [ { "slug": "…", "excerpt": "…" } ] }
+```ts
+type PreprocessResponse = {
+  bookId: string;
+  status: "queued" | "running" | "done" | "failed";
+  outputPath?: string;
+  error?: string;
+};
 ```
 
----
+## 预处理产物
 
-## `GET /api/usage`
+落盘目录：
 
-过去 N 天内 token-ish 粗略汇总（占位计量，真实计费仍以后端为准）。
-
-查询参数：`userId`、`days?=7`。
-
-```json
-{
-  "data": {
-    "totals": { "prompt": 980, "completion": 180 },
-    "horizonDays": 7,
-    "samples": [ { "action": "chat.prompt", "tokenIn": 560 } ]
-  }
-}
+```txt
+app/lib/data/preprocessed/<book-id>.json
 ```
 
----
+### BookPreprocessFile
 
-## 成员 2 · 悬疑 / MiniMax / RAG 接入指南
+```ts
+type BookPreprocessFile = {
+  bookId: string;
+  title: string;
+  language: "zh" | "en" | "mixed";
+  generatedAt: string;
+  chapters: PreprocessedChapter[];
+  spoilerRules: SpoilerRule[];
+  ragChunks: RagChunk[];
+  mapSeeds: MapSeedNode[];
+};
+```
 
-1. **剧透图谱**：repository `getLatestSpoilerMap(bookId)`；按 `paragraphId` join 段落文本即可喂给上下文窗口或 guardrail。
-2. **悬念**：`pendingRepository.addPending`、`checkReadyPendings` 已实现；需在 reader 翻到目标段时前端调用 `/api/pending/check`。
-3. **会话持久化**：`conversationRepository.addMessage`，随后把 assistant 回填即可；可先扩展 `messages` schema 追加 `attachments`/`tool_calls` Mixed 字段。
+### Chapter / Paragraph
 
-## 成员 3 · 视效 / 音色 / stems 接入指南
+```ts
+type PreprocessedChapter = {
+  id: string;
+  index: number;
+  title: string;
+  summary: string;
+  paragraphs: PreprocessedParagraph[];
+};
 
-1. **视觉圣经**：查询 `visualstyles` repository（可按 `bookId + isActive`）获得 prompt 模板。
-2. **章节资产**：`chapterassets` 按 `(bookId, chapterIndex)` 对齐 `hero / ambience_loop / sfx_kit / narration_take` 槽位后写回 CDN URLs。
-3. **生成草稿**：可先直写 Mongo `generatedcontents`，再由 `/api/generations` 验证 UI 占位。
+type PreprocessedParagraph = {
+  id: string;
+  chapterIndex: number;
+  paragraphIndex: number;
+  text: string;
+  summary: string;
+  entities: string[];
+  spoilerLevel: 0 | 1 | 2 | 3;
+};
+```
 
----
+### SpoilerRule
 
-## 尚未落地的 REST（审计 2026-05-19）
+```ts
+type SpoilerRule = {
+  id: string;
+  bookId: string;
+  questionPatterns: string[];
+  topic: string;
+  safeBefore: {
+    chapterIndex: number;
+    paragraphId: string;
+  };
+  revealAfter: {
+    chapterIndex: number;
+    paragraphId: string;
+  };
+  safeTeaser: string;
+  revealSummary: string;
+  evidenceParagraphIds: string[];
+};
+```
 
-以下内容需在合并成员 2/3 分支时补齐；在此前 UI 主要走 mock / 本地组件状态。
+### RagChunk
 
-| 期望路由 | 用途 |
-| --- | --- |
-| `POST /api/pending/release` | 悬念条目标记为已释放 |
-| `GET /api/books/[bookId]/spoiler-map`（或等价） | 导出最新剧透图谱供 RAG |
-| `POST /api/generations/image`（及 music / voice …） | 发起多模态任务并写 `generatedcontents` |
+```ts
+type RagChunk = {
+  id: string;
+  bookId: string;
+  chapterIndex: number;
+  paragraphIds: string[];
+  text: string;
+  summary: string;
+  keywords: string[];
+  spoilerLevel: 0 | 1 | 2 | 3;
+};
+```
 
-详见 **`integration-guide.md`**（仓库根目录）。
+### MapSeedNode
 
----
+```ts
+type MapSeedNode = {
+  id: string;
+  paragraphId: string;
+  chapterIndex: number;
+  type: "character" | "bookmark" | "pending" | "bgm" | "image";
+  title: string;
+  preview: string;
+};
+```
 
-### 一键验证（本地）
+## PendingQuestion
 
-```bash
-npm run dev
-curl -s http://localhost:3000/api/books | jq .
-curl -s "http://localhost:3000/api/books/little-prince/chapters/0" | jq .
-curl -s -X POST http://localhost:3000/api/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"bookId":"little-prince","message":"你好"}' | jq .
+前端 store 中的悬念队列建议升级为：
+
+```ts
+type PendingQuestionStatus = "pending" | "ready" | "released" | "done";
+
+type PendingQuestion = {
+  id: string;
+  bookId: string;
+  userQuestion: string;
+  askedAt: ReadingAnchor;
+  revealAfter: {
+    chapterIndex: number;
+    paragraphId: string;
+  };
+  status: PendingQuestionStatus;
+  safeTeaser: string;
+  deferReason?: string;
+  createdAt: number;
+  releasedAt?: number;
+};
+```
+
+状态流转：
+
+```txt
+pending -> ready -> released -> done
+```
+
+- `pending`：用户还没读到释放点。
+- `ready`：`setReadingAnchor` 已越过 `revealAfter`，可以提示红点。
+- `released`：用户点击红点或打开 AI，正在生成揭晓回答。
+- `done`：揭晓回答已经进入聊天记录。
+
+## 错误格式
+
+非 SSE 接口使用：
+
+```ts
+type ApiError = {
+  error: {
+    code: string;
+    message: string;
+    detail?: unknown;
+  };
+};
+```
+
+SSE 中途失败：
+
+```txt
+event: error
+data: {"code":"MINIMAX_UNAVAILABLE","message":"AI 暂时不可用，请稍后重试"}
 ```

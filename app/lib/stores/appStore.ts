@@ -50,6 +50,7 @@ export type ParagraphVisual = {
   emoji: string;
   colorFrom: string;
   colorTo: string;
+  imageUrl?: string;
   createdAt: number;
 };
 
@@ -123,7 +124,7 @@ export type AppStoreState = {
   addParagraphVisual: (
     bookId: string,
     paragraphId: string,
-    draft: Pick<ParagraphVisual, "emoji" | "colorFrom" | "colorTo">,
+    draft: Pick<ParagraphVisual, "emoji" | "colorFrom" | "colorTo"> & { imageUrl?: string },
   ) => void;
   removeParagraphVisual: (
     bookId: string,

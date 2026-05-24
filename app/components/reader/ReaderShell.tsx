@@ -13,7 +13,9 @@ import { useRouter } from "next/navigation";
 import { Bookmark, MessagesSquare, Mic, Palette } from "lucide-react";
 
 import { ChatDrawer } from "@/app/components/chat/ChatDrawer";
+import { ImageGeneration } from "@/app/components/multimodal/ImageGeneration";
 import { ParagraphVisualAlbum } from "@/app/components/multimodal/ParagraphVisualAlbum";
+import { RadioDramaMode } from "@/app/components/multimodal/RadioDramaMode";
 import { ChapterTransition } from "@/app/components/reader/ChapterTransition";
 import { ImmersiveReadChrome } from "@/app/components/reader/ImmersiveReadChrome";
 import { ReaderBgmStrip } from "@/app/components/reader/ReaderBgmStrip";
@@ -187,6 +189,12 @@ export function ReaderShell({
   const [readingSettingsOpen, setReadingSettingsOpen] = useState(false);
   const [micProcessing, setMicProcessing] = useState(false);
   const [bubbleTurn, setBubbleTurn] = useState<BubbleTurn | null>(null);
+  const [imageGenParagraph, setImageGenParagraph] = useState<Paragraph | null>(
+    null,
+  );
+  const [radioParagraph, setRadioParagraph] = useState<Paragraph | null>(
+    null,
+  );
   const [scrollProgressPct, setScrollProgressPct] = useState(0);
 
   const revealedParasRef = useRef(new Set<string>());
@@ -931,7 +939,7 @@ export function ReaderShell({
                   label="生成画面"
                   hint="从这段话派生一张氛围图"
                   onPick={() => {
-                    /* stub: multimodal.generateForParagraph(...) */
+                    setImageGenParagraph(menu.paragraph);
                   }}
                   onDone={() => setMenu(null)}
                 />
@@ -956,7 +964,7 @@ export function ReaderShell({
                   label="沉浸朗读"
                   hint="用声音把这段再走一遍"
                   onPick={() => {
-                    /* stub: immersive read-aloud */
+                    setRadioParagraph(menu.paragraph);
                   }}
                   onDone={() => setMenu(null)}
                 />
@@ -1040,6 +1048,20 @@ export function ReaderShell({
         fontSizeOptions={FONT_SIZE_OPTIONS}
         open={readingSettingsOpen}
         onClose={() => setReadingSettingsOpen(false)}
+      />
+
+      <ImageGeneration
+        bookId={bookId}
+        open={imageGenParagraph != null}
+        onClose={() => setImageGenParagraph(null)}
+        paragraph={imageGenParagraph}
+      />
+
+      <RadioDramaMode
+        bookId={bookId}
+        open={radioParagraph != null}
+        onClose={() => setRadioParagraph(null)}
+        paragraph={radioParagraph}
       />
 
     </div>

@@ -306,7 +306,7 @@ class OpenAIImageGenerator(ImageGenerator):
         )
         img_url = resp.data[0].url
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with httpx.Client(timeout=120) as client:
+        with _new_client() as client:
             r = client.get(img_url)
             r.raise_for_status()
             output_path.write_bytes(r.content)
@@ -524,17 +524,16 @@ class ReplicateMusicGenerator(MusicGenerator):
             output_path.write_bytes(output.read())
         elif isinstance(output, (list, tuple)):
             url = output[0]
-            with httpx.Client(timeout=300) as c:
+            with _new_client() as c:
                 output_path.write_bytes(c.get(url).content)
         elif isinstance(output, str):
-            with httpx.Client(timeout=300) as c:
+            with _new_client() as c:
                 output_path.write_bytes(c.get(output).content)
         else:
-            # Some clients return an object with .url
             url = getattr(output, "url", None)
             if not url:
                 raise RuntimeError(f"Unexpected MusicGen output type: {type(output)}")
-            with httpx.Client(timeout=300) as c:
+            with _new_client() as c:
                 output_path.write_bytes(c.get(url).content)
         return output_path
 
@@ -595,6 +594,11 @@ import binascii
 import json as _json
 
 from anthropic import Anthropic as _MMAnthropic
+import httpx
+
+# Disable SSL verification to work around corporate proxy interference on Windows
+def _new_client(**kwargs):
+    return httpx.Client(verify=False, **kwargs)
 
 # These imports may already be in scope from the top of the file, but
 # re-declaring keeps this MiniMax block self-contained for readers.
@@ -644,7 +648,7 @@ def _post_minimax_image(
             if url_
         ]
 
-    resp = httpx.post(url, headers=headers, json=payload, timeout=180)
+    resp = _new_client().post(url, headers=headers, json=payload, timeout=180)
     resp.raise_for_status()
     data = resp.json()
 
@@ -690,7 +694,7 @@ def _post_minimax_image_with_url(
         # We also download the bytes ourselves below.
         "response_format": "url",
     }
-    resp = httpx.post(url, headers=headers, json=payload, timeout=180)
+    resp = _new_client().post(url, headers=headers, json=payload, timeout=180)
     resp.raise_for_status()
     data = resp.json()
 
@@ -705,7 +709,7 @@ def _post_minimax_image_with_url(
     if not urls:
         raise RuntimeError(f"MiniMax image API returned no URLs: {data}")
     img_url = urls[0]
-    with httpx.Client(timeout=180) as c:
+    with _new_client() as c:
         r = c.get(img_url)
         r.raise_for_status()
         img_bytes = r.content
@@ -1305,7 +1309,7 @@ class MiniMaxMusicGenerator(MusicGenerator):
             },
             "output_format": "url",
         }
-        resp = httpx.post(url, headers=headers, json=payload, timeout=180)
+        resp = _new_client().post(url, headers=headers, json=payload, timeout=180)
         resp.raise_for_status()
         data = resp.json()
 
@@ -1322,7 +1326,7 @@ class MiniMaxMusicGenerator(MusicGenerator):
             raise RuntimeError(f"MiniMax music API returned no audio URL: {data}")
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with httpx.Client(timeout=600) as client:
+        with _new_client() as client:
             r = client.get(music_url)
             r.raise_for_status()
             output_path.write_bytes(r.content)
