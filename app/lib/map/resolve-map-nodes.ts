@@ -114,7 +114,7 @@ export function resolveMapJumpTarget(
     ? chapters.findIndex((ch) => ch.paragraphs.some((p) => p.id === pid))
     : -1;
 
-  let safeIdx =
+  const safeIdx =
     byPara >= 0
       ? byPara
       : Math.min(
