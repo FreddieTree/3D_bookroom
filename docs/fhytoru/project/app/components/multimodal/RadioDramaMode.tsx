@@ -42,18 +42,30 @@ async function fetchVoiceCast(bookId: string): Promise<Record<string, { voice_id
   }
 }
 
-async function synthesize(text: string, voiceId: string): Promise<string | null> {
+async function synthesize(
+  text: string,
+  voiceId: string,
+): Promise<{ url: string | null; error: string | null }> {
   try {
     const res = await fetch("/api/generate-tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, voiceId }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      let msg = `TTS ${res.status}`;
+      try {
+        const data = (await res.json()) as { error?: string };
+        if (data.error) msg = data.error;
+      } catch {
+        // body not JSON; keep status code
+      }
+      return { url: null, error: msg };
+    }
     const blob = await res.blob();
-    return URL.createObjectURL(blob);
-  } catch {
-    return null;
+    return { url: URL.createObjectURL(blob), error: null };
+  } catch (e) {
+    return { url: null, error: String(e) };
   }
 }
 
@@ -69,6 +81,7 @@ export function RadioDramaMode({ bookId, open, onClose, paragraph }: RadioDramaM
   const [loading, setLoading] = useState(false);
   const [activeLine, setActiveLine] = useState(0);
   const [roles, setRoles] = useState<RadioRole[]>(DEFAULT_ROLES);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // 用 ref 存当前的 lines/roles，避免 stale closure
   const linesRef = useRef<DialogueLine[]>([]);
@@ -94,6 +107,7 @@ export function RadioDramaMode({ bookId, open, onClose, paragraph }: RadioDramaM
       setPlaying(false);
       setLoading(false);
       setActiveLine(0);
+      setApiError(null);
       blobUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
       blobUrlsRef.current = [];
     }
@@ -141,13 +155,21 @@ export function RadioDramaMode({ bookId, open, onClose, paragraph }: RadioDramaM
     setActiveLine(dl.roleIndex);
 
     const blobUrl = await synthesize(dl.text, role.voiceId);
-    if (!blobUrl || !playingRef.current) {
+    if (blobUrl.error) {
+      const msg = blobUrl.error;
+      setApiError(
+        msg.includes("balance") || msg.includes("额度")
+          ? "AI 语音额度不足，本段暂时无法朗读"
+          : `语音合成失败：${msg.slice(0, 60)}`,
+      );
+    }
+    if (!blobUrl.url || !playingRef.current) {
       void playFrom(idx + 1);
       return;
     }
 
-    blobUrlsRef.current.push(blobUrl);
-    const audio = new Audio(blobUrl);
+    blobUrlsRef.current.push(blobUrl.url);
+    const audio = new Audio(blobUrl.url);
     audioRef.current = audio;
     audio.onended = () => { void playFrom(idx + 1); };
     try {
@@ -164,6 +186,7 @@ export function RadioDramaMode({ bookId, open, onClose, paragraph }: RadioDramaM
       setPlaying(false);
       return;
     }
+    setApiError(null);
     setLoading(true);
     playingRef.current = true;
     setPlaying(true);
@@ -225,6 +248,12 @@ export function RadioDramaMode({ bookId, open, onClose, paragraph }: RadioDramaM
                 </div>
               ))}
             </div>
+
+            {apiError ? (
+              <p className="mb-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[0.7rem] leading-relaxed text-amber-200">
+                ⚠️ {apiError}
+              </p>
+            ) : null}
 
             <div className="flex items-center justify-center gap-6 border-t border-white/10 pt-4">
               <button

@@ -60,6 +60,7 @@ export function ImageGeneration({
     { emoji: string; from: string; to: string }[]
   >([]);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const lines = useMemo(() => waiterLines(paragraph), [paragraph]);
 
@@ -69,6 +70,7 @@ export function ImageGeneration({
         setPhase("idle");
         setCandidates([]);
         setGeneratedImageUrl(null);
+        setApiError(null);
       });
       return;
     }
@@ -78,6 +80,7 @@ export function ImageGeneration({
   const onWaiterDone = useCallback(async () => {
     if (!paragraph) return;
     setPhase("skeleton");
+    setApiError(null);
 
     const artStyle = await fetchArtStyle(bookId);
 
@@ -93,11 +96,17 @@ export function ImageGeneration({
         setPhase("pick");
         return;
       }
-    } catch {
-      // fallback to mock below
+      if (data.error) {
+        setApiError(
+          data.error.includes("balance") || data.error.includes("额度")
+            ? "AI 图像额度不足，已切换为本地候选画板"
+            : `AI 图像生成失败：${data.error.slice(0, 60)}`,
+        );
+      }
+    } catch (e) {
+      setApiError("网络异常，已切换为本地候选画板");
     }
 
-    // fallback: random palette
     window.setTimeout(() => {
       const pool = [...PALETTES].sort(() => Math.random() - 0.5).slice(0, 3);
       setCandidates(pool);
@@ -201,7 +210,13 @@ export function ImageGeneration({
             ) : null}
 
             {phase === "pick" && !generatedImageUrl ? (
-              <div className="grid grid-cols-3 gap-2 pb-6">
+              <div className="pb-6">
+                {apiError ? (
+                  <p className="mb-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[0.7rem] leading-relaxed text-amber-200">
+                    ⚠️ {apiError}
+                  </p>
+                ) : null}
+                <div className="grid grid-cols-3 gap-2">
                 {candidates.map((c) => (
                   <motion.button
                     key={c.emoji + c.from}
@@ -221,6 +236,7 @@ export function ImageGeneration({
                     </span>
                   </motion.button>
                 ))}
+                </div>
               </div>
             ) : null}
           </motion.div>
