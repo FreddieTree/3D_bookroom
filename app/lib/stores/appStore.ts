@@ -28,6 +28,12 @@ export type ReaderThemeMode = "light" | "dark" | "system";
 
 export type ReadingDisplayMode = "standard" | "immersive";
 
+export type BookmarkEntry = {
+  paragraphId: string;
+  chapterIndex: number;
+  createdAt: number;
+};
+
 export type ReaderSettings = {
   fontSize: 14 | 16 | 18 | 20 | 22;
   brightness: number;
@@ -132,6 +138,15 @@ export type AppStoreState = {
     visualId: string,
   ) => void;
 
+  /** 段落书签（按书 → 书签列表）；持久化到 localStorage */
+  bookmarksByBook: Record<string, BookmarkEntry[]>;
+  toggleBookmark: (
+    bookId: string,
+    paragraphId: string,
+    chapterIndex: number,
+  ) => void;
+  isBookmarked: (bookId: string, paragraphId: string) => boolean;
+
   /** 阅读器 BGM 小条是否折叠 */
   readerBgmBarCollapsed: boolean;
   setReaderBgmBarCollapsed: (collapsed: boolean) => void;
@@ -177,6 +192,7 @@ export const useAppStore = create<AppStoreState>()(
       mapSessionByBook: {},
 
       paragraphVisualsByBook: {},
+      bookmarksByBook: {},
       readerBgmBarCollapsed: false,
 
       notificationsEnabled: true,
@@ -281,6 +297,26 @@ export const useAppStore = create<AppStoreState>()(
             },
           };
         }),
+
+      toggleBookmark: (bookId, paragraphId, chapterIndex) =>
+        set((s) => {
+          const list = s.bookmarksByBook[bookId] ?? [];
+          const existing = list.findIndex(
+            (b) => b.paragraphId === paragraphId,
+          );
+          const next =
+            existing >= 0
+              ? list.filter((_, i) => i !== existing)
+              : [...list, { paragraphId, chapterIndex, createdAt: Date.now() }];
+          return {
+            bookmarksByBook: { ...s.bookmarksByBook, [bookId]: next },
+          };
+        }),
+
+      isBookmarked: (bookId, paragraphId) => {
+        const list = get().bookmarksByBook[bookId] ?? [];
+        return list.some((b) => b.paragraphId === paragraphId);
+      },
 
       setReaderBgmBarCollapsed: (readerBgmBarCollapsed) =>
         set({ readerBgmBarCollapsed }),
@@ -506,6 +542,7 @@ export const useAppStore = create<AppStoreState>()(
         pendingQuestions: state.pendingQuestions,
         mapSessionByBook: state.mapSessionByBook,
         paragraphVisualsByBook: state.paragraphVisualsByBook,
+        bookmarksByBook: state.bookmarksByBook,
         readerBgmBarCollapsed: state.readerBgmBarCollapsed,
         notificationsEnabled: state.notificationsEnabled,
         mockUser: state.mockUser,
@@ -535,6 +572,10 @@ export const useAppStore = create<AppStoreState>()(
           paragraphVisualsByBook: {
             ...current.paragraphVisualsByBook,
             ...p?.paragraphVisualsByBook,
+          },
+          bookmarksByBook: {
+            ...current.bookmarksByBook,
+            ...p?.bookmarksByBook,
           },
           readerBgmBarCollapsed:
             p?.readerBgmBarCollapsed ?? current.readerBgmBarCollapsed,

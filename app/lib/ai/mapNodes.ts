@@ -127,6 +127,24 @@ function pendingToMapNode(
   };
 }
 
+function bookmarkToMapNode(b: {
+  paragraphId: string;
+  chapterIndex: number;
+  createdAt: number;
+}): MapNode {
+  return {
+    id: `bookmark-${b.paragraphId}-${b.createdAt}`,
+    paragraphId: b.paragraphId,
+    chapterIndex: b.chapterIndex,
+    type: "bookmark",
+    timestamp: new Date(b.createdAt),
+    payload: {
+      title: "标记",
+      preview: "你给这段画了个记号；点按回到此处。",
+    },
+  };
+}
+
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
   return `${s.slice(0, max - 1)}…`;
@@ -137,6 +155,11 @@ export interface MapNodesOptions {
   passthroughMultimodalNodes?: MapNode[];
   chatMessages?: ChatMessage[];
   pendingQuestions?: PendingQuestion[];
+  runtimeBookmarks?: {
+    paragraphId: string;
+    chapterIndex: number;
+    createdAt: number;
+  }[];
   demoNow?: Date;
 }
 
@@ -171,6 +194,11 @@ export function getAiMapNodes(
     for (let i = 0; i < opts.pendingQuestions.length; i += 1) {
       const n = pendingToMapNode(opts.pendingQuestions[i], demoNow, i);
       if (n) out.push(n);
+    }
+  }
+  if (opts.runtimeBookmarks) {
+    for (const b of opts.runtimeBookmarks) {
+      out.push(bookmarkToMapNode(b));
     }
   }
 

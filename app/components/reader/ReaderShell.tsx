@@ -172,6 +172,14 @@ export function ReaderShell({
   const releasePending = useAppStore((s) => s.releasePending);
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
   const paragraphVisualsByBook = useAppStore((s) => s.paragraphVisualsByBook);
+  const toggleBookmark = useAppStore((s) => s.toggleBookmark);
+  const bookmarksOfBook = useAppStore(
+    (s) => s.bookmarksByBook[bookId] ?? [],
+  );
+  const bookmarkedIds = useMemo(
+    () => new Set(bookmarksOfBook.map((b) => b.paragraphId)),
+    [bookmarksOfBook],
+  );
 
   const fontSize = useAppStore((s) => s.readerSettings.fontSize);
   const brightness = useAppStore((s) => s.readerSettings.brightness);
@@ -851,6 +859,7 @@ export function ReaderShell({
                             <ReaderParagraphBlock
                               paragraph={para}
                               isLeadParagraph={pi === 0}
+                              isBookmarked={bookmarkedIds.has(para.id)}
                               pressingId={pressingId}
                               menuParagraphId={menu?.paragraph.id ?? null}
                               onPointerDown={(ev) => {
@@ -1001,10 +1010,20 @@ export function ReaderShell({
                 />
                 <ReaderMenuTile
                   icon={Bookmark}
-                  label="书签"
-                  hint="稍后再回到这一句"
+                  label={
+                    menu && bookmarkedIds.has(menu.paragraph.id)
+                      ? "取消书签"
+                      : "书签"
+                  }
+                  hint={
+                    menu && bookmarkedIds.has(menu.paragraph.id)
+                      ? "移除这段的标记"
+                      : "稍后再回到这一句"
+                  }
                   onPick={() => {
-                    /* stub: bookmark API */
+                    if (menu) {
+                      toggleBookmark(bookId, menu.paragraph.id, chapterIndex);
+                    }
                   }}
                   onDone={() => setMenu(null)}
                 />

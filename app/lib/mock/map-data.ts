@@ -391,6 +391,11 @@ function multimodalRawNodes(): MapNode[] {
 export interface GetMapNodesOptions {
   chatMessages?: ChatMessage[];
   pendingQuestions?: PendingQuestion[];
+  runtimeBookmarks?: {
+    paragraphId: string;
+    chapterIndex: number;
+    createdAt: number;
+  }[];
   demoNow?: Date;
 }
 
@@ -398,16 +403,23 @@ export function getMapNodesForBook(
   bookId: string,
   opts: GetMapNodesOptions = {},
 ): MapNode[] {
-  if (bookId !== "little-prince") return [];
+  const isLittlePrince = bookId === "little-prince";
   return getAiMapNodes(bookId, {
-    passthroughMultimodalNodes: multimodalRawNodes(),
+    passthroughMultimodalNodes: isLittlePrince ? multimodalRawNodes() : [],
     chatMessages: opts.chatMessages,
     pendingQuestions: opts.pendingQuestions,
+    runtimeBookmarks: opts.runtimeBookmarks,
     demoNow: opts.demoNow ?? MAP_DEMO_NOW,
   });
 }
 
-export type MapFilterTab = "all" | "dialogue" | "image" | "character" | "pending";
+export type MapFilterTab =
+  | "all"
+  | "dialogue"
+  | "image"
+  | "character"
+  | "pending"
+  | "bookmark";
 
 export function mapTabMatchesNode(tab: MapFilterTab, node: MapNode): boolean {
   if (node.type === "chapter" || node.type === "current") return tab === "all";

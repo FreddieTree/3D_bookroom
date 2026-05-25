@@ -44,6 +44,7 @@ const FILTER_TABS: { id: MapFilterTab; label: string }[] = [
   { id: "dialogue", label: "我的对话" },
   { id: "image", label: "画面" },
   { id: "character", label: "人物" },
+  { id: "bookmark", label: "书签" },
   { id: "pending", label: "悬念" },
 ];
 
@@ -156,6 +157,7 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
   const readerProgressByBook = useReaderStore((s) => s.progressByBook);
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
   const chatMessages = useAppStore((s) => s.chatMessages);
+  const bookmarks = useAppStore((s) => s.bookmarksByBook[bookId] ?? []);
   const mapSessionByBook = useAppStore((s) => s.mapSessionByBook);
   const setMapSession = useAppStore((s) => s.setMapSession);
 
@@ -177,8 +179,13 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
   }, [progress?.chapterIndex, chapters.length]);
 
   const rawMockNodes = useMemo(
-    () => getMapNodesForBook(bookId, { chatMessages, pendingQuestions }),
-    [bookId, chatMessages, pendingQuestions],
+    () =>
+      getMapNodesForBook(bookId, {
+        chatMessages,
+        pendingQuestions,
+        runtimeBookmarks: bookmarks,
+      }),
+    [bookId, chatMessages, pendingQuestions, bookmarks],
   );
 
   const baseNodes = useMemo(() => {
