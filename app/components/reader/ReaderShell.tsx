@@ -1009,19 +1009,17 @@ export function ReaderShell({
                 <ReaderMenuTile
                   icon={Bookmark}
                   label={
-                    menu && bookmarkedIds.has(menu.paragraph.id)
+                    bookmarkedIds.has(menu.paragraph.id)
                       ? "取消书签"
                       : "书签"
                   }
                   hint={
-                    menu && bookmarkedIds.has(menu.paragraph.id)
+                    bookmarkedIds.has(menu.paragraph.id)
                       ? "移除这段的标记"
                       : "稍后再回到这一句"
                   }
                   onPick={() => {
-                    if (menu) {
-                      toggleBookmark(bookId, menu.paragraph.id, chapterIndex);
-                    }
+                    toggleBookmark(bookId, menu.paragraph.id, chapterIndex);
                   }}
                   onDone={() => setMenu(null)}
                 />

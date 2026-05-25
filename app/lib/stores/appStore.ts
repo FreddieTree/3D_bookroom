@@ -16,7 +16,7 @@ import {
   type ChatMessage,
   type PendingQuestion,
 } from "@/app/lib/mock/chat";
-import type { MapFilterTab } from "@/app/lib/mock/map-data";
+import type { BookmarkEntry, MapFilterTab } from "@/app/lib/mock/map-data";
 import {
   DEFAULT_MOCK_TOKEN,
   DEFAULT_MOCK_USER,
@@ -27,12 +27,6 @@ import {
 export type ReaderThemeMode = "light" | "dark" | "system";
 
 export type ReadingDisplayMode = "standard" | "immersive";
-
-export type BookmarkEntry = {
-  paragraphId: string;
-  chapterIndex: number;
-  createdAt: number;
-};
 
 export type ReaderSettings = {
   fontSize: 14 | 16 | 18 | 20 | 22;
@@ -145,7 +139,6 @@ export type AppStoreState = {
     paragraphId: string,
     chapterIndex: number,
   ) => void;
-  isBookmarked: (bookId: string, paragraphId: string) => boolean;
 
   /** 阅读器 BGM 小条是否折叠 */
   readerBgmBarCollapsed: boolean;
@@ -306,17 +299,12 @@ export const useAppStore = create<AppStoreState>()(
           );
           const next =
             existing >= 0
-              ? list.filter((_, i) => i !== existing)
+              ? [...list.slice(0, existing), ...list.slice(existing + 1)]
               : [...list, { paragraphId, chapterIndex, createdAt: Date.now() }];
           return {
             bookmarksByBook: { ...s.bookmarksByBook, [bookId]: next },
           };
         }),
-
-      isBookmarked: (bookId, paragraphId) => {
-        const list = get().bookmarksByBook[bookId] ?? [];
-        return list.some((b) => b.paragraphId === paragraphId);
-      },
 
       setReaderBgmBarCollapsed: (readerBgmBarCollapsed) =>
         set({ readerBgmBarCollapsed }),

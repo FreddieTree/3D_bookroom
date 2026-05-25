@@ -2,6 +2,12 @@
  * 阅读地图 Mock — 《小王子》前三章时间轴节点（演示用，不调 API）。
  */
 
+export type BookmarkEntry = {
+  paragraphId: string;
+  chapterIndex: number;
+  createdAt: number;
+};
+
 export type MapNodeType =
   | "current"
   | "chapter"
@@ -372,6 +378,7 @@ const RAW_NODES: Raw[] = [
 ];
 
 import { getAiMapNodes } from "@/app/lib/ai/mapNodes";
+import { LITTLE_PRINCE_BOOK_ID } from "@/app/lib/ai/data/littlePrince";
 import type { ChatMessage, PendingQuestion } from "@/app/lib/mock/chat";
 
 /**
@@ -391,11 +398,7 @@ function multimodalRawNodes(): MapNode[] {
 export interface GetMapNodesOptions {
   chatMessages?: ChatMessage[];
   pendingQuestions?: PendingQuestion[];
-  runtimeBookmarks?: {
-    paragraphId: string;
-    chapterIndex: number;
-    createdAt: number;
-  }[];
+  runtimeBookmarks?: BookmarkEntry[];
   demoNow?: Date;
 }
 
@@ -403,7 +406,7 @@ export function getMapNodesForBook(
   bookId: string,
   opts: GetMapNodesOptions = {},
 ): MapNode[] {
-  const isLittlePrince = bookId === "little-prince";
+  const isLittlePrince = bookId === LITTLE_PRINCE_BOOK_ID;
   return getAiMapNodes(bookId, {
     passthroughMultimodalNodes: isLittlePrince ? multimodalRawNodes() : [],
     chatMessages: opts.chatMessages,

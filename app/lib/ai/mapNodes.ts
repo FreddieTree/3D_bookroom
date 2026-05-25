@@ -23,6 +23,7 @@ import type {
 } from "@/app/lib/ai/data/schema";
 import { littlePrince, LITTLE_PRINCE_BOOK_ID } from "@/app/lib/ai/data/littlePrince";
 import type {
+  BookmarkEntry,
   MapFilterTab,
   MapNode,
   MapNodePayload,
@@ -127,11 +128,7 @@ function pendingToMapNode(
   };
 }
 
-function bookmarkToMapNode(b: {
-  paragraphId: string;
-  chapterIndex: number;
-  createdAt: number;
-}): MapNode {
+function bookmarkToMapNode(b: BookmarkEntry): MapNode {
   return {
     id: `bookmark-${b.paragraphId}-${b.createdAt}`,
     paragraphId: b.paragraphId,
@@ -155,11 +152,7 @@ export interface MapNodesOptions {
   passthroughMultimodalNodes?: MapNode[];
   chatMessages?: ChatMessage[];
   pendingQuestions?: PendingQuestion[];
-  runtimeBookmarks?: {
-    paragraphId: string;
-    chapterIndex: number;
-    createdAt: number;
-  }[];
+  runtimeBookmarks?: BookmarkEntry[];
   demoNow?: Date;
 }
 
