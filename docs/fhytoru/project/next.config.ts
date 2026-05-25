@@ -28,6 +28,7 @@ const nextConfig: NextConfig = {
     viewTransition: true,
   },
   turbopack: {},
+  outputFileTracingRoot: __dirname,
 };
 
 export default withPWA(nextConfig);
