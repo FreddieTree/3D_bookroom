@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Map as MapIcon, Settings } from "lucide-react";
+import { Map as MapIcon, MessagesSquare, Settings } from "lucide-react";
 
 import { PageHeader } from "@/app/components/layout/PageHeader";
 import { AnimatedTitle } from "@/app/components/typography/AnimatedTitle";
@@ -24,6 +24,7 @@ type ReaderTopChromeProps = {
   deepReadingHidden: boolean;
   pendingQuestionsCount: number;
   onMap: () => void;
+  onChat: () => void;
   onSettings: () => void;
   onReleasePending: () => void;
 };
@@ -39,6 +40,7 @@ export function ReaderTopChrome({
   deepReadingHidden,
   pendingQuestionsCount,
   onMap,
+  onChat,
   onSettings,
   onReleasePending,
 }: ReaderTopChromeProps) {
@@ -130,6 +132,14 @@ export function ReaderTopChrome({
                   </button>
                 ) : null}
               </div>
+              <button
+                type="button"
+                onClick={() => onChat()}
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="问 AI"
+              >
+                <MessagesSquare className="size-[1.15rem]" strokeWidth={1.75} />
+              </button>
               <button
                 type="button"
                 onClick={() => onSettings()}

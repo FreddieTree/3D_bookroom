@@ -16,7 +16,7 @@ import {
   type ChatMessage,
   type PendingQuestion,
 } from "@/app/lib/mock/chat";
-import type { MapFilterTab } from "@/app/lib/mock/map-data";
+import type { BookmarkEntry, MapFilterTab } from "@/app/lib/mock/map-data";
 import {
   DEFAULT_MOCK_TOKEN,
   DEFAULT_MOCK_USER,
@@ -132,6 +132,14 @@ export type AppStoreState = {
     visualId: string,
   ) => void;
 
+  /** 段落书签（按书 → 书签列表）；持久化到 localStorage */
+  bookmarksByBook: Record<string, BookmarkEntry[]>;
+  toggleBookmark: (
+    bookId: string,
+    paragraphId: string,
+    chapterIndex: number,
+  ) => void;
+
   /** 阅读器 BGM 小条是否折叠 */
   readerBgmBarCollapsed: boolean;
   setReaderBgmBarCollapsed: (collapsed: boolean) => void;
@@ -177,6 +185,7 @@ export const useAppStore = create<AppStoreState>()(
       mapSessionByBook: {},
 
       paragraphVisualsByBook: {},
+      bookmarksByBook: {},
       readerBgmBarCollapsed: false,
 
       notificationsEnabled: true,
@@ -279,6 +288,21 @@ export const useAppStore = create<AppStoreState>()(
                 [paragraphId]: list.filter((v) => v.id !== visualId),
               },
             },
+          };
+        }),
+
+      toggleBookmark: (bookId, paragraphId, chapterIndex) =>
+        set((s) => {
+          const list = s.bookmarksByBook[bookId] ?? [];
+          const existing = list.findIndex(
+            (b) => b.paragraphId === paragraphId,
+          );
+          const next =
+            existing >= 0
+              ? [...list.slice(0, existing), ...list.slice(existing + 1)]
+              : [...list, { paragraphId, chapterIndex, createdAt: Date.now() }];
+          return {
+            bookmarksByBook: { ...s.bookmarksByBook, [bookId]: next },
           };
         }),
 
@@ -506,6 +530,7 @@ export const useAppStore = create<AppStoreState>()(
         pendingQuestions: state.pendingQuestions,
         mapSessionByBook: state.mapSessionByBook,
         paragraphVisualsByBook: state.paragraphVisualsByBook,
+        bookmarksByBook: state.bookmarksByBook,
         readerBgmBarCollapsed: state.readerBgmBarCollapsed,
         notificationsEnabled: state.notificationsEnabled,
         mockUser: state.mockUser,
@@ -535,6 +560,10 @@ export const useAppStore = create<AppStoreState>()(
           paragraphVisualsByBook: {
             ...current.paragraphVisualsByBook,
             ...p?.paragraphVisualsByBook,
+          },
+          bookmarksByBook: {
+            ...current.bookmarksByBook,
+            ...p?.bookmarksByBook,
           },
           readerBgmBarCollapsed:
             p?.readerBgmBarCollapsed ?? current.readerBgmBarCollapsed,
