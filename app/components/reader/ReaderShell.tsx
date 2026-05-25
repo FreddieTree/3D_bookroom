@@ -390,6 +390,18 @@ export function ReaderShell({
   }, [bookId, chapter, scheduleAnchor]);
 
   useEffect(() => {
+    const el = contentScrollRef.current;
+    if (!el) return;
+    const blockNativeSelect = (e: Event) => e.preventDefault();
+    el.addEventListener("selectstart", blockNativeSelect);
+    el.addEventListener("contextmenu", blockNativeSelect);
+    return () => {
+      el.removeEventListener("selectstart", blockNativeSelect);
+      el.removeEventListener("contextmenu", blockNativeSelect);
+    };
+  }, [chapterIndex, bookId]);
+
+  useEffect(() => {
     if (!openParagraphId || chapters === null || chapters.length === 0) return;
     const chIdx = chapters.findIndex((ch) =>
       ch.paragraphs.some((p) => p.id === openParagraphId),
@@ -762,7 +774,7 @@ export function ReaderShell({
         <main
           ref={contentScrollRef}
           className={cn(
-            "reader-content flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
+            "reader-content reader-no-native-select flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y",
             "px-[max(1.15rem,_env(safe-area-inset-left))] py-4",
             "pr-[max(1.15rem,_env(safe-area-inset-right))]",
             readingDisplayMode === "standard" &&

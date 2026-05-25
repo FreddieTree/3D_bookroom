@@ -39,7 +39,7 @@ export const ReaderParagraphBlock = memo(function ReaderParagraphBlock({
       style={{ fontVariantNumeric: "tabular-nums" }}
     >
       <span
-        className="cursor-default select-text tabular-nums"
+        className="cursor-default select-none tabular-nums"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}

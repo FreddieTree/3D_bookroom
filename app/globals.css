@@ -584,14 +584,16 @@
       0 0 22px -6px color-mix(in oklch, var(--color-primary) 35%, transparent);
   }
 
-  /** 正文选区 · 半透明主题底 + 实色文字 */
-  .reader-selection-scope ::selection {
-    background-color: color-mix(
-      in oklch,
-      var(--color-primary) 42%,
-      transparent
-    );
-    color: var(--color-foreground);
+  /**
+   * 阅读正文禁用系统文字选区（避免长按出现蓝框）；
+   * 长按由 ReaderShell 自定义菜单处理。
+   */
+  .reader-chapter-pane,
+  .reader-chapter-pane .reader-mixed-prose,
+  .reader-chapter-pane .reader-mixed-prose span {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 
   /** 中英文混排：标点比例、英文字距、tabular 数字 */
@@ -665,6 +667,12 @@
     width: 100%;
     max-width: 100%;
     -webkit-overflow-scrolling: touch;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .reader-no-native-select {
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .reader-content .reader-mixed-prose {
