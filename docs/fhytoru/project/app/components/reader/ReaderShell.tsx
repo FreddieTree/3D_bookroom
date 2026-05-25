@@ -493,6 +493,7 @@ export function ReaderShell({
                 >
                   <span
                     className="cursor-default select-none"
+                    style={{ touchAction: "pan-y" }}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       clearPressTimer();
