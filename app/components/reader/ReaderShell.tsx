@@ -173,13 +173,11 @@ export function ReaderShell({
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
   const paragraphVisualsByBook = useAppStore((s) => s.paragraphVisualsByBook);
   const toggleBookmark = useAppStore((s) => s.toggleBookmark);
-  const bookmarksOfBook = useAppStore(
-    (s) => s.bookmarksByBook[bookId] ?? [],
-  );
-  const bookmarkedIds = useMemo(
-    () => new Set(bookmarksOfBook.map((b) => b.paragraphId)),
-    [bookmarksOfBook],
-  );
+  const bookmarksByBook = useAppStore((s) => s.bookmarksByBook);
+  const bookmarkedIds = useMemo(() => {
+    const list = bookmarksByBook[bookId] ?? [];
+    return new Set(list.map((b) => b.paragraphId));
+  }, [bookmarksByBook, bookId]);
 
   const fontSize = useAppStore((s) => s.readerSettings.fontSize);
   const brightness = useAppStore((s) => s.readerSettings.brightness);

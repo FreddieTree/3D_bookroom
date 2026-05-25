@@ -157,7 +157,11 @@ export function ReadingMapView({ bookId }: ReadingMapViewProps) {
   const readerProgressByBook = useReaderStore((s) => s.progressByBook);
   const pendingQuestions = useAppStore((s) => s.pendingQuestions);
   const chatMessages = useAppStore((s) => s.chatMessages);
-  const bookmarks = useAppStore((s) => s.bookmarksByBook[bookId] ?? []);
+  const bookmarksByBook = useAppStore((s) => s.bookmarksByBook);
+  const bookmarks = useMemo(
+    () => bookmarksByBook[bookId] ?? [],
+    [bookmarksByBook, bookId],
+  );
   const mapSessionByBook = useAppStore((s) => s.mapSessionByBook);
   const setMapSession = useAppStore((s) => s.setMapSession);
 
