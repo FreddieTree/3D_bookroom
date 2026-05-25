@@ -772,6 +772,7 @@ export function ReaderShell({
         pendingQuestionsCount={pendingQuestions.length}
         readingDisplayMode={readingDisplayMode}
         onMap={() => toMap(bookId)}
+        onChat={() => openChat()}
         onSettings={() => setReadingSettingsOpen(true)}
         onReleasePending={() => releasePending()}
       />
