@@ -501,7 +501,7 @@ export function ReaderShell({
                       setMenu({ paragraph: para, x: e.clientX, y: e.clientY });
                     }}
                     onPointerDown={(e) => {
-                      if (e.button !== 0) return;
+                      if (e.button !== 0 && e.button !== -1) return;
                       startPress(para, e.clientX, e.clientY);
                     }}
                     onPointerMove={(e) => moveDuringPress(e.clientX, e.clientY)}
