@@ -853,7 +853,7 @@ export function ReaderShell({
                               pressingId={pressingId}
                               menuParagraphId={menu?.paragraph.id ?? null}
                               onPointerDown={(ev) => {
-                                if (ev.button !== 0) return;
+                                if (ev.button !== 0 && ev.button !== -1) return;
                                 startPress(para, ev.clientX, ev.clientY);
                               }}
                               onPointerMove={(ev) =>
