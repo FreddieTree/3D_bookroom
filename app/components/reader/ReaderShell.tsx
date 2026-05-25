@@ -55,7 +55,10 @@ import { useReaderStore } from "@/app/lib/stores/readerStore";
 type WindowTimerHandle = number;
 
 const LONG_PRESS_MS = 500;
-const CHAT_EDGE_PX_FROM_RIGHT = 56;
+/** 右缘热区宽度：从此区域起手向左滑打开对话 */
+const CHAT_EDGE_PX_FROM_RIGHT = 80;
+/** 向左滑动的最小位移（dx 为负） */
+const CHAT_SWIPE_LEFT_PX = 48;
 const FONT_SIZE_OPTIONS = [14, 16, 18, 20, 22] as const;
 
 function paragraphOffsetInScroll(
@@ -213,11 +216,12 @@ export function ReaderShell({
 
   const [pressingId, setPressingId] = useState<string | null>(null);
 
+  const readerPageRef = useRef<HTMLDivElement>(null);
   const contentScrollRef = useRef<HTMLElement>(null);
   const scrollPersistTimer = useRef<WindowTimerHandle | null>(
     null,
   );
-  const swipeGestureStart = useRef<{ x: number; y: number } | null>(null);
+  const chatSwipeStart = useRef<{ x: number; y: number } | null>(null);
 
   const anchorDebounce = useRef<number | null>(null);
 
@@ -390,16 +394,71 @@ export function ReaderShell({
   }, [bookId, chapter, scheduleAnchor]);
 
   useEffect(() => {
-    const el = contentScrollRef.current;
-    if (!el) return;
     const blockNativeSelect = (e: Event) => e.preventDefault();
-    el.addEventListener("selectstart", blockNativeSelect);
-    el.addEventListener("contextmenu", blockNativeSelect);
+    const nodes = [
+      readerPageRef.current,
+      contentScrollRef.current,
+    ].filter(Boolean) as HTMLElement[];
+    for (const el of nodes) {
+      el.addEventListener("selectstart", blockNativeSelect);
+      el.addEventListener("contextmenu", blockNativeSelect);
+    }
     return () => {
-      el.removeEventListener("selectstart", blockNativeSelect);
-      el.removeEventListener("contextmenu", blockNativeSelect);
+      for (const el of nodes) {
+        el.removeEventListener("selectstart", blockNativeSelect);
+        el.removeEventListener("contextmenu", blockNativeSelect);
+      }
     };
   }, [chapterIndex, bookId]);
+
+  useEffect(() => {
+    const root = readerPageRef.current;
+    if (!root) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (isChatOpen || readingSettingsOpen) return;
+      const t = e.touches[0];
+      if (!t) return;
+      chatSwipeStart.current = { x: t.clientX, y: t.clientY };
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (isChatOpen || readingSettingsOpen) return;
+      const s = chatSwipeStart.current;
+      chatSwipeStart.current = null;
+      if (!s) return;
+      const te = e.changedTouches[0];
+      if (!te) return;
+
+      const vw =
+        typeof window !== "undefined" ? window.innerWidth : 412;
+      const edgeWidth = Math.min(
+        CHAT_EDGE_PX_FROM_RIGHT,
+        Math.max(64, Math.round(vw * 0.2)),
+      );
+      const edgeStart = s.x >= vw - edgeWidth;
+      const dx = te.clientX - s.x;
+      const dyAbs = Math.abs(te.clientY - s.y);
+
+      if (
+        edgeStart &&
+        dx <= -CHAT_SWIPE_LEFT_PX &&
+        dyAbs < 88
+      ) {
+        safeVibrate(6);
+        openChat();
+      }
+    };
+
+    root.addEventListener("touchstart", onTouchStart, { passive: true });
+    root.addEventListener("touchend", onTouchEnd, { passive: true });
+    root.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      root.removeEventListener("touchstart", onTouchStart);
+      root.removeEventListener("touchend", onTouchEnd);
+      root.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [bookId, isChatOpen, readingSettingsOpen, openChat]);
 
   useEffect(() => {
     if (!openParagraphId || chapters === null || chapters.length === 0) return;
@@ -685,9 +744,10 @@ export function ReaderShell({
 
   return (
     <div
+      ref={readerPageRef}
       data-lenis-prevent=""
       className={cn(
-        "reader-page reader-paper-shell relative flex min-h-dvh flex-1 flex-col",
+        "reader-page reader-paper-shell reader-no-native-select relative flex min-h-dvh flex-1 flex-col select-none",
       )}
     >
       <div
@@ -746,30 +806,6 @@ export function ReaderShell({
           readingDisplayMode === "standard" &&
             "pt-[calc(10rem+env(safe-area-inset-top))]",
         )}
-        onTouchStart={(e) => {
-          const t = e.touches[0];
-          if (!t) return;
-          swipeGestureStart.current = { x: t.clientX, y: t.clientY };
-        }}
-        onTouchEnd={(e) => {
-          const s = swipeGestureStart.current;
-          swipeGestureStart.current = null;
-          if (!s) return;
-          const te = e.changedTouches[0];
-          if (!te) return;
-          const vw = typeof window !== "undefined" ? window.innerWidth : 412;
-          const dx = te.clientX - s.x;
-          const dyAbs = Math.abs(te.clientY - s.y);
-          if (
-            readingDisplayMode === "standard" &&
-            s.x >= vw - CHAT_EDGE_PX_FROM_RIGHT &&
-            dx > 64 &&
-            dyAbs < 76
-          ) {
-            safeVibrate(6);
-            openChat();
-          }
-        }}
       >
         <main
           ref={contentScrollRef}

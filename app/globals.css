@@ -356,6 +356,29 @@
     min-height: 100dvh;
     min-height: -webkit-fill-available;
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /** 全局禁用控件长按系统选区（蓝框）；输入框仍可选中编辑 */
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  [type="reset"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 

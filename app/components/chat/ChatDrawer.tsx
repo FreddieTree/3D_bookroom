@@ -15,8 +15,8 @@ import {
 import { VoiceRecorderOverlay } from "@/app/components/chat/VoiceRecorderOverlay";
 import { SideModal } from "@/app/components/ui/SideModal";
 import { spring } from "@/app/lib/animations";
-import { IS_DEMO_MODE } from "@/app/lib/env/demo";
 import { useOverlayHistoryBinding } from "@/app/lib/hooks/useOverlayHistory";
+import { getSeedChatHistoryForBook } from "@/app/lib/mock/chat-seed";
 import { MOCK_SUSPENSE_RELEASE_PREFIX } from "@/app/lib/mock/reading";
 import { cn } from "@/app/lib/utils";
 import { safeVibrate } from "@/app/lib/utils/vibrate";
@@ -24,33 +24,6 @@ import type { ChatMessage } from "@/app/lib/mock/chat";
 import { useAppStore } from "@/app/lib/stores/appStore";
 
 const FIVE_MIN = 5 * 60 * 1000;
-const MOCK_HISTORY: ChatMessage[] = [
-  {
-    id: "mock-1",
-    role: "ai",
-    type: "normal",
-    content: "你好，我读的是《小王子》这一章的开头。你希望我从哪里陪你读下去？",
-    createdAt: Date.now() - 1000 * 60 * 72,
-    isStreaming: false,
-  },
-  {
-    id: "mock-2",
-    role: "user",
-    type: "normal",
-    content: "第一段里绵羊和帽子的桥段，我总觉得有点难过。",
-    createdAt: Date.now() - 1000 * 60 * 70,
-    isStreaming: false,
-  },
-  {
-    id: "mock-3",
-    role: "ai",
-    type: "normal",
-    content:
-      "大人只想看见帽子，小王子看见的是吞下大象的蟒蛇——这里藏着一种孤独：解释权不同，世界也会不同。你如果愿意，可以告诉我你最近一次“被看懂”是什么时候。",
-    createdAt: Date.now() - 1000 * 60 * 69,
-    isStreaming: false,
-  },
-];
 
 type ChatDrawerProps = {
   bookTitle: string;
@@ -86,9 +59,8 @@ export function ChatDrawer({
 
   const flatMessages = useMemo(() => {
     if (messages.length > 0) return messages;
-    if (IS_DEMO_MODE) return MOCK_HISTORY;
-    return [];
-  }, [messages]);
+    return getSeedChatHistoryForBook(bookId);
+  }, [messages, bookId]);
 
   useEffect(() => {
     if (!open || !listRef.current) return;
@@ -152,7 +124,7 @@ export function ChatDrawer({
         transition={spring.soft}
         panelClassName="max-h-[100dvh] w-[min(100vw,_26rem)] border-l border-border shadow-[var(--shadow-elevation-3)]"
       >
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 select-none flex-col">
           <header className="flex shrink-0 items-center gap-2 border-b border-border px-2 pb-3 pt-[max(0.65rem,env(safe-area-inset-top))]">
             <button
               type="button"
@@ -238,7 +210,7 @@ export function ChatDrawer({
                   const max = 22 * 4;
                   el.style.height = `${Math.min(el.scrollHeight, max)}px`;
                 }}
-                className="mb-1 min-h-[2.5rem] max-h-24 flex-1 resize-none rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring"
+                className="mb-1 min-h-[2.5rem] max-h-24 flex-1 resize-none select-text rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring"
               />
               <button
                 type="button"
